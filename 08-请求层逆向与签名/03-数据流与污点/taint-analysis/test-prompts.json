@@ -1,0 +1,73 @@
+{
+  "skill": "taint-analysis",
+  "version": "0.1.0",
+  "source_book": "《逆向与漏洞分析》 魏强、武泽慧",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "ta-01",
+      "type": "should_trigger",
+      "prompt": "上传的文件名一路传到了 sprintf，我想确认这个不可信输入到底能不能到达危险函数，中间有没有被转义。",
+      "expected_behavior": "应激活 taint-analysis，并把上传文件名标为 source、sprintf 的格式串或参数标为 sink，沿赋值与调用传播检查净化是否切断污点。",
+      "notes": "典型触发（source→sink）。防与 dataflow 混淆：用户明确关心不可信数据是否到达敏感操作。"
+    },
+    {
+      "id": "ta-02",
+      "type": "should_trigger",
+      "prompt": "CodeQL 报了一条从 getParameter 到 executeQuery 的污点流，帮我看看路径可不可达、中间有没有真正清污，值不值得报。",
+      "expected_behavior": "应激活 taint-analysis，并复核该 taint flow 的 source、sink 参数、传播链、净化点与路径可行性，给出确认/疑似/排除结论。",
+      "notes": "典型触发（扫描器报告复核）。防与漏洞定性混淆：本步只判污点流，不直接写利用链。"
+    },
+    {
+      "id": "ta-03",
+      "type": "should_trigger",
+      "prompt": "帮我查一下 user input 能不能流到 sink，中间 taint propagation 有没有被 sanitizer 清掉，这条 taint flow 是不是 false positive。",
+      "expected_behavior": "应激活 taint-analysis，并明确 source/sink、检查传播规则与净化函数，判定该 taint flow 是误报还是需升级核验。",
+      "notes": "英文 trigger 触发。防与一般代码审计混淆：已给出 source/sink 与净化判断需求。"
+    },
+    {
+      "id": "ta-04",
+      "type": "should_trigger",
+      "prompt": "表单里拿到的值最后拼进了系统命令，中间只过了一个白名单，我想知道这算不算已经把危险数据挡住了。",
+      "expected_behavior": "应激活 taint-analysis，并将表单值标为 source、命令拼接点标为 sink，判断白名单是否真正清除可控性而非只做表面处理。",
+      "notes": "无术语但情境相同（净化函数判定）。防与具体漏洞定性混淆：此处只判数据是否仍受控。"
+    },
+    {
+      "id": "ta-05",
+      "type": "should_not_trigger",
+      "prompt": "我只想知道变量 c 在这个循环里每一步取什么值、哪一行之后就不再活跃，不需要追踪什么外部输入。",
+      "expected_behavior": "不应激活本 skill，应激活 dataflow-analysis-and-code-modeling，因为没有 source/sink 语义，用户要的是一般活跃变量与取值传播。",
+      "notes": "跨 skill 诱饵（一般数据流分析）。taint 是数据流的特化，缺 source/sink 时不应硬套。"
+    },
+    {
+      "id": "ta-06",
+      "type": "should_not_trigger",
+      "prompt": "登录框我手工输 ' or 1=1 就进去了，帮我判断这算不算 SQL 注入、危害多大、报告里该怎么定级和写利用条件。",
+      "expected_behavior": "不应激活本 skill，应激活 non-memory-vulnerability-analysis，因为用户要的是具体注入漏洞的构成、定级与利用条件，不是污点传播规则。",
+      "notes": "跨 skill 诱饵（具体 SQL 注入判定）。防“看到 SQL 就上污点”；污点只回答可达性，不替代漏洞定性。"
+    },
+    {
+      "id": "ta-07",
+      "type": "should_not_trigger",
+      "prompt": "我只有两天，手上既有源码又有二进制，数据流、污点、符号执行和 fuzz 都想用，到底先上哪个、时间怎么分配？",
+      "expected_behavior": "不应激活本 skill，应激活 program-analysis-technique-selection，因为当前要决定技术组合与预算，而不是执行某一条污点分析流程。",
+      "notes": "跨 skill 诱饵（技术选型）。防把“提到污点”当成“要做污点分析”。"
+    },
+    {
+      "id": "ta-08",
+      "type": "edge_case",
+      "prompt": "程序没有源码，但我能插桩跑起来，想知道网络收到的包能不能流到 memcpy 的长度参数，动态污点这条路合适吗？",
+      "expected_behavior": "应激活 taint-analysis，并选择动态污点：在接收点标 source、memcpy 长度参数设 sink，同时记录代码覆盖率与单次输入漏报风险。",
+      "notes": "边界应调用：无源码但可插桩，动态污点成立；需限定覆盖率与指令支持范围。"
+    },
+    {
+      "id": "ta-09",
+      "type": "edge_case",
+      "prompt": "目标加壳还带反调试，IDA 打不开也插不上桩，能不能先直接跑污点分析把它的漏洞链找出来？",
+      "expected_behavior": "不应激活本 skill，应激活 anti-debugging-and-unpacking，因为观察与插桩前提不成立，必须先脱壳并处理反调试。",
+      "notes": "边界不应调用：强对抗/加壳，属于 B 段硬边界；防止污点链断在未建模代码处。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "共 9 条：4 should_trigger（2 典型、1 英文 trigger、1 无术语同情境）+ 3 should_not_trigger（一般数据流、具体 SQL 注入判定、技术选型）+ 2 edge_case（无源码但可插桩的动态污点；加壳反调试导致插桩前提不成立）。诱饵容错为 0，核心分界是“只追被标记 source 到 sink”与“通用数据依赖/具体漏洞定性”。"
+}

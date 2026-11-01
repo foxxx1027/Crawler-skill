@@ -1,0 +1,100 @@
+{
+  "skill": "pagination-acceptance",
+  "version": "0.1.0",
+  "source_book": "《Python项目案例开发从入门到实战：爬虫、游戏和机器学习》 — 郑秋生、夏敏捷",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我循环跑了二十页，日志里二十行都在，可数据库里查出来就一页的量，连 id 看着都差不多。",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "典型静默故障：每页条数与首条唯一键相同=请求没变，要用故障签名反查偏移有没有进 URL。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "每页抓回来的第一条都是一个，我怀疑那个起始参数根本没拼到地址里。",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "断言最终 URL 是否含偏移，把'变量算了'与'真的进了请求串'分开。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "代码里是算了一个起始位置，但我从来没打印过每一轮最终的地址，也不知道它到底用没用上。",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "没有可观测证据就无法验收；先让每轮完整 URL 与条数可见，再用断言复核。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "接口给了个 next 字段，我不会接，下一轮还是拿原来的值去查，翻来覆去就那几条。",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "URL 在变/游标没回填的分支：上一轮返回值是否喂给下一轮，是本 skill 的验收对象。"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "总共四万条，我按每页二十条全跑完，去重以后只剩三百条，分不清是站点就这么多还是我漏抓了。",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "条数对账（页数×每页 vs 去重后条数）与去重键复核，正是本 skill 的三件套。"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "The request URL changes every round but the row count still doesn't add up. Is the cursor not being fed into the next call?",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "英文正面场景：URL 在变但条数不符 → 游标未回填/去重键问题，按故障签名定位。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我人工标了六十条评论训了个分类器，它报准确率 0.92，我能直接写'模型准确率 92%'吗？",
+      "expected_skill": "small-sample-eval",
+      "rationale": "同书兄弟诱饵（关键分界）：问的是'分数背后的分母/样本量对不对'，不是抓到的条数对不对。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "浏览器里往下滚还能不断出新东西，我的脚本只拿到头二十条。",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "同书兄弟诱饵：这是判动态档与转异步接口，不是页与页之间的推进验收。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "翻页的时候顺着链接跑到站外去了，我怕它越爬越远停不下来。",
+      "expected_skill": "crawl-scope-and-halt",
+      "rationale": "跨书诱饵：范围裁剪、外链与停机策略属于 scope/halt，不是单条翻页链是否推进。"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "列表接口单条请求就一直 401，一条都调不通，还谈不上翻页。",
+      "expected_skill": "http-request-replication",
+      "rationale": "跨书诱饵：单条重放不通，先把一条请求调通，再谈多轮推进。"
+    },
+    {
+      "id": "should-not-trigger-05",
+      "type": "should_not_trigger",
+      "prompt": "列表页抓完进详情页补字段，最后入库好多字段是空的，可任务成功率显示很高。",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "跨书诱饵：多跳字段拼接与半成品 Item 的问题，与分页条数无关。"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "接口说 total 是 25，每页 20 条，我抓到两页正好 25 条，这算漏抓吗？",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "边界：对账要带上服务端总量口径，2 页 25 条与 total=25 一致，不算漏；关键判据是'页数×每页'是否落在 ±1 页容差内。"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "我还没想好拿哪个字段当唯一标识，先按标题去重抓了一轮再说。",
+      "expected_skill": "requirements-first-data-model",
+      "rationale": "边界：去重键尚未定义，先定唯一键/数据模型；否则对账算不准。关键判据是'唯一键是否已定'。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条应调用覆盖 A2 五类（含 URL 未打印、游标回填、条数对账）；5 条诱饵含同书 small-sample/dynamic 与跨书 scope/http/multipage；2 条边界卡 total 口径与唯一键前置。与 small-sample-eval 的分界在 test-results.md 写明。"
+}

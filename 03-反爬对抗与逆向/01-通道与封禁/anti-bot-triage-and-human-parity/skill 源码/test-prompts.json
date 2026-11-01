@@ -1,0 +1,52 @@
+{
+  "skill": "anti-bot-triage-and-human-parity",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "同一个列表页，浏览器打开正常，脚本跑十分钟后开始全返回 403。是不是 IP 被拉黑了？我要不要马上换代理？",
+      "expected_behavior": "应激活 anti-bot-triage-and-human-parity，先按五层漏斗自检（渲染→参数→会话→身份→交互），确认请求头是否与浏览器一致、Accept-Language 是否缺、请求间隔是否过快，而不是先换 IP；只有五层都对齐仍失败才判定为对方应用层风控并改路径/联系站方。",
+      "notes": "正面场景：403 + 想直接换 IP，正是 description 的核心触发"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "页面里有个链接是 CSS display:none 的，表单里还有个用户根本看不见的 input。我脚本顺手都点了、都填了，之后就一直失败，为什么？",
+      "expected_behavior": "应激活 anti-bot-triage-and-human-parity，指出这是交互层的蜜罐红线：人类看不见而程序能读到的一律不碰；必须提交的令牌只回传页面当前值，不缓存旧值复用。",
+      "notes": "正面场景：蜜罐/隐藏字段是分诊第五层，description 明确写了 honeypot"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "同样一条 POST，在 httpbin.org 上怎么发都成功；换到目标站就 403。请求头我是从浏览器复制的，不知道还差什么。",
+      "expected_behavior": "应激活 anti-bot-triage-and-human-parity，进入参数层与身份层：逐项比对真实请求的字段名/值/格式，检查 User-Agent 与常被忽视的 Accept-Language、cookie 是否前后一致、时间上是否快得不正常，列出比对清单而不是继续加代理。",
+      "notes": "正面场景：测试站通、目标站不通，是身份层“像不像人”的典型对照"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我们抓到的这批数据里含用户手机号，法务在问能不能不经脱敏直接展示在官网上，你帮我理一下风险。",
+      "expected_behavior": "不应激活 anti-bot-triage-and-human-parity，因为这是数据用途的合规判断，应激活 scraping-compliance-layering 按版权/授权/损害/访问控制四轨输出做法。",
+      "notes": "跨 skill 混淆诱饵：MERGE_PLAN/LINKS 点名 anti-bot 与合规分层对照，两者都谈“能不能抓这个站”"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "HTTP 规范里 401 和 403 的确切定义差别是什么？写周报要引用一句准确的。",
+      "expected_behavior": "不应激活本 skill，因为这是状态码定义的信息查询，没有“我抓不到/被封了”的现场与待分诊症状。",
+      "notes": "诱饵：纯信息查询，且含 401/403 关键词，最易误触发"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "同一个页面，脚本抓下来是空白、字段全缺，浏览器里内容一模一样能看到。我怀疑是被识别成机器人了。",
+      "expected_behavior": "应激活 anti-bot-triage-and-human-parity 但只走到第一层渲染：先问“JS 执行了吗、页面是不是靠前端生成”，而不是直接判定“被封/换 IP”；若确认数据确实由 JS 渲染，再转 data-path-cost-ladder 决定走哪条取数通道。理由：空白页首先是渲染层问题，不是身份层问题。",
+      "notes": "边界：空白页同时被两个 skill 的 description 覆盖，判别点是“先怀疑自己哪一层”"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

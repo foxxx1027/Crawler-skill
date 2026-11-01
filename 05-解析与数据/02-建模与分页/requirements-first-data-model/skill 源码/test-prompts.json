@@ -1,0 +1,52 @@
+{
+  "skill": "requirements-first-data-model",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "老板让我把某平台的商品全抓下来，我打开详情页数了数有 40 多个字段，打算先全存进表里、以后用不上再删。这样对吗？",
+      "expected_behavior": "应激活 requirements-first-data-model，先不问“页面有哪些字段”而是先问“项目要回答什么”，再让每个候选字段过四道闸（缺了能否达成目标、晚点抓有多难、是否冗余、放这个对象是否合理），把“我想要”压缩成“我必要”。",
+      "notes": "正面场景：字段怎么选 + 准备把看得见的字段都搬进库"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "已经接到第 51 个站点了，每接一个新站就要改表、加列、再写一个新的解析函数，现在动都不敢动了。",
+      "expected_behavior": "应激活 requirements-first-data-model，把“怎么抓”（每站一条 Website 配置：起始 URL、选择器、URL 正则、字段映射）与“抓到什么”（统一 Content 对象）分离，让新增站点等于加一条配置而不是加一段代码。",
+      "notes": "正面场景：多站点扩张后边际成本失控，description 明确覆盖"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "商品表里同一个品牌的字符串重复写了八千次，我要不要单独拆一张品牌表？主键又该拿什么来定？",
+      "expected_behavior": "应激活 requirements-first-data-model，建议把重复出现的值抽成独立表 + 关系表，并强调每张表都加自增 id 主键（因为并不确定哪些字段真的唯一），只为高频查询字段建索引；稀疏属性放进 attributes 表。",
+      "notes": "正面场景：表结构/主键/重复值，是数据模型问题"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "表结构早定死了，现在的麻烦只是对方改版后我的 XPath 取到了错行、偶尔还返回 0 条。",
+      "expected_behavior": "不应激活 requirements-first-data-model（schema 已定），应激活 semantic-selector-robustness 处理锚点与改版失效。",
+      "notes": "跨 skill 混淆诱饵：semantic-selector 依赖本 skill，两者都出现在“抓取不稳”的场景"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "SQLite 里 UNIQUE 约束和 PRIMARY KEY 在索引和 NULL 处理上有什么区别？",
+      "expected_behavior": "不应激活本 skill，因为这是数据库语法的纯信息查询，没有“这个项目该抓哪些字段、怎么建表”的建模需求。",
+      "notes": "诱饵：纯信息查询，且含表结构/主键关键词"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "就抓一个页面的 5 个字段，一次性跑完出个 CSV 交差，还用得着先设计数据模型吗？",
+      "expected_behavior": "不应激活完整的 requirements-first-data-model 流程（description 已排除一次性单页取数），只需提醒给字段起稳定名字、留一个 id 以便回溯；若这次结果之后要按月重跑或多站汇总，再升级为正式建模。",
+      "notes": "边界：有“抓哪些字段”的形式，但规模与生命周期都不需要建模"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

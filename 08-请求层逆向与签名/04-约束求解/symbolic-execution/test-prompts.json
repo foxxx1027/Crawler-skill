@@ -1,0 +1,73 @@
+{
+  "skill": "symbolic-execution",
+  "version": "0.1.0",
+  "source_book": "《逆向与漏洞分析》 魏强、武泽慧",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "sy-01",
+      "type": "should_trigger",
+      "prompt": "这个 assert 我想让它失败，能不能帮我求一组输入，保证程序真的走到这一行而不是靠猜？",
+      "expected_behavior": "应激活 symbolic-execution，并符号化输入、收集到 assert 的路径条件，与违反条件取合取后求解，给出可复现输入并具体执行验证。",
+      "notes": "典型触发（定向生成输入）。防与覆盖率 fuzz 混淆：用户要的是约束求解出的确定输入。"
+    },
+    {
+      "id": "sy-02",
+      "type": "should_trigger",
+      "prompt": "全局数组只有 10 个元素，下标是 rand()%20，这个越界到底可不可达？我想要约束证据，不要一句“可能”。",
+      "expected_behavior": "应激活 symbolic-execution，并在数组访问点取越界谓词作初始约束，正向或逆向收集路径条件，求解 sat/unsat 并说明建模假设。",
+      "notes": "典型触发（可达性判定）。防与 dataflow 混淆：这里是路径敏感求解，不是 May/Must 上近似。"
+    },
+    {
+      "id": "sy-03",
+      "type": "should_trigger",
+      "prompt": "帮我用 path condition 和 constraint solving 生成输入，让程序走到这个危险写；顺便证明另一条分支是 infeasible。",
+      "expected_behavior": "应激活 symbolic-execution，并分别对目标分支求 sat 模型、对另一分支求 unsat，严格区分已证实与 unknown。",
+      "notes": "英文 trigger 触发。防与 coverage fuzz 混淆：核心是路径条件与求解器，不是变异。"
+    },
+    {
+      "id": "sy-04",
+      "type": "should_trigger",
+      "prompt": "这段校验里有一串魔数比较，fuzz 跑了好久都过不去，我只想知道该填哪几个字节才能通过，不想再加大变异量。",
+      "expected_behavior": "应激活 symbolic-execution，并定位该比较分支、把魔数比较并入路径条件，求解出可通过校验的具体字节。",
+      "notes": "无术语但情境相同（定向攻破比较）。防与 coverage fuzz 混淆：用户明确要解出具体值而非继续盲变异。"
+    },
+    {
+      "id": "sy-05",
+      "type": "should_not_trigger",
+      "prompt": "AFL 跑了两天覆盖率一直不涨，种子库也换过几次，想先按 fuzz 闭环排查是种子质量、校验门槛还是调度策略的问题。",
+      "expected_behavior": "不应激活本 skill，应激活 coverage-guided-fuzzing，因为用户要诊断 fuzz 闭环与覆盖率停滞原因，尚未提出对某分支做约束求解。",
+      "notes": "跨 skill 诱饵（覆盖率 fuzz 卡住）。防“见停滞就上符号执行”；只有定位到具体分支并要解约束时才转本 skill。"
+    },
+    {
+      "id": "sy-06",
+      "type": "should_not_trigger",
+      "prompt": "我只想看这个变量被哪些语句赋值、哪些函数会用到它，做静态依赖就够了，不需要生成输入，也不用求解器。",
+      "expected_behavior": "不应激活本 skill，应激活 dataflow-analysis-and-code-modeling，因为用户明确只要静态依赖与定值事实，不要路径条件与输入生成。",
+      "notes": "跨 skill 诱饵（只做静态依赖）。防把“分析数据怎么流”误判为符号执行。"
+    },
+    {
+      "id": "sy-07",
+      "type": "should_not_trigger",
+      "prompt": "我只有驱动的 ioctl 接口和一个可疑函数地址，没有文件输入，想定向测那个解析函数有没有越界，该怎么走？",
+      "expected_behavior": "不应激活本 skill，应激活 directed-memory-kernel-fuzzing，因为目标是内核/驱动接口的定向 fuzz，不依赖路径约束求解。",
+      "notes": "跨 skill 诱饵（内核/驱动定向 fuzz）。防把“已知目标点”一律当成符号执行。"
+    },
+    {
+      "id": "sy-08",
+      "type": "edge_case",
+      "prompt": "闭源 x86 程序能拿到 IR 也能插桩，但输入会进一个很深的循环，路径特别多。这样还能用符号执行吗，要不要先限制范围？",
+      "expected_behavior": "应激活 symbolic-execution，但限定为选择性符号化，配合循环取一次/终值、分支剪枝与时间内存路径上限，只对明确目标点求解。",
+      "notes": "边界应调用：前提成立但路径爆炸风险高；必须带缓解手段并输出有界结论。"
+    },
+    {
+      "id": "sy-09",
+      "type": "edge_case",
+      "prompt": "一个大型闭源程序，没符号、没法插桩、也拿不到 IR，我想用符号执行把全程序扫一遍，证明它没有漏洞，可行吗？",
+      "expected_behavior": "可以激活 symbolic-execution 并明确回答“不可行”，或激活 program-analysis-technique-selection 改选路线；两者都须指出：符号执行依赖 IR 或插桩，且有界结果不能证明全程序无漏洞，应先补前提或改用定向 fuzz/动态分析。给出“可以扫一遍并证明无漏洞”的肯定答案才算不通过。",
+      "notes": "边界：用户问的是“可行性”，激活对应 skill 解释为何不可行是合理行为；关键看是否指出前提缺失与“不能证明无漏洞”，而不是是否激活。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "共 9 条：4 should_trigger（2 典型、1 英文 trigger、1 无术语同情境）+ 3 should_not_trigger（覆盖率 fuzz 停滞、仅静态依赖、内核定向 fuzz）+ 2 edge_case（有 IR 但路径爆炸需限定；无 IR 且无法插桩还要证明无漏洞）。诱饵容错为 0，核心分界是“路径条件+约束求解”与“覆盖率反馈/静态依赖/定向 fuzz”。"
+}

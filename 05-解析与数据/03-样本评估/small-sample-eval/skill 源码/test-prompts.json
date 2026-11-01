@@ -1,0 +1,107 @@
+{
+  "skill": "small-sample-eval",
+  "version": "0.1.0",
+  "source_book": "《Python项目案例开发从入门到实战：爬虫、游戏和机器学习》 — 郑秋生、夏敏捷",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我抓了几百条评论，人工标了六十条，跑出来准确率 0.92，能不能直接在报告里写'模型准确率 92%'？",
+      "expected_skill": "small-sample-eval",
+      "rationale": "几十条样本上报单一 accuracy：先写清分母、固定协议重复测、报均值与波动，而不是把单次 0.92 当总体成绩。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "报告里'正常言论'那一行精确率是 0.00，support 也是 0，是不是说明模型把这一类全判错了？",
+      "expected_skill": "small-sample-eval",
+      "rationale": "support=0 表示该类无测试样本，指标作废，不等于模型差；先读 support 再读指标。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "两版特征各跑了一次，词袋那版错分率从 3.5% 掉到 0，是不是说明改好了？",
+      "expected_skill": "small-sample-eval",
+      "rationale": "0/1 极值先查泄漏、同源与样本量；比较必须在同一划分协议、同一重复次数下进行。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "数据太少，我每次随机分训练测试结果都不一样，报告里到底该写哪一个数？",
+      "expected_skill": "small-sample-eval",
+      "rationale": "小样本不报单次结果：固定随机种子与重复次数，报均值与波动。"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "我把测试集塞进 fit 的 validation_data 里，最后 evaluate 出来的 0.959，这能算泛化成绩吗？",
+      "expected_skill": "small-sample-eval",
+      "rationale": "验证集≠测试集；被训练中看过的集合上的分数不是独立泛化成绩。"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "Accuracy 0.92 on 60 labeled samples — can I report it as the model's accuracy?",
+      "expected_skill": "small-sample-eval",
+      "rationale": "英文正面场景：小样本上单一准确率的可报告性判断。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我循环跑了二十页，数据库里只有一页的数据，可日志明明说抓了二十页。",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "同书兄弟诱饵（关键分界）：问的是'抓到的条数对不对'（采集端），不是'分数背后的分母对不对'（评估端）。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "抓下来的页面只有网站名和一张小图，商品图一张都没拿到。",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "同书兄弟诱饵：这是取数路线/判档问题，不是评估协议。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "网站改版以后，我的 XPath 定位不到了，想重写解析规则，正则和 BeautifulSoup 该选哪个？",
+      "expected_skill": "semantic-selector-robustness",
+      "rationale": "跨书诱饵：解析器/选择器写法问题；本 skill 不修选择器。"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "我要把这些数据建表存起来，字段和主键该怎么定？",
+      "expected_skill": "requirements-first-data-model",
+      "rationale": "跨书诱饵：数据模型与 schema 设计，不是评估协议与报告形态。"
+    },
+    {
+      "id": "should-not-trigger-05",
+      "type": "should_not_trigger",
+      "prompt": "想给选择器加个保险，网站改版后能自动重新定位元素。",
+      "expected_skill": "adaptive-selector-maintenance",
+      "rationale": "跨书诱饵：选择器自愈维护，与评估无关。"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我有一万两千条样本，早就留好了一份独立测试集，还要不要按你说的重复跑一百次？",
+      "expected_skill": "none",
+      "rationale": "边界：样本充足且有独立测试集时走标准流程即可，重复留出协议只增加噪声。关键判据是'是否已有独立测试集且样本量足够'。"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "采集报告只有一句'共抓 8000 条'，要不要按命中、漏抓、错抓、重复分开报？",
+      "expected_skill": "small-sample-eval",
+      "rationale": "边界：采集端与评估端是同一纪律；按桶报才能解释声明总量。关键判据是'总量能否被各桶解释'。"
+    },
+    {
+      "id": "edge-03",
+      "type": "edge_case",
+      "prompt": "我要写'抓了 10 页共 200 条，其中 60 条标了'，该先核对条数还是先算准确率？",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "边界：先把采集条数对平（分页验收），再谈标注分母与指标；条数对不上时后面的评估全部无意义。关键判据是'声明总量与实际样本量是否已对上'。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条应调用覆盖 A2 五类（小样本报分、support=0、极值、重复协议、验证集混用）；5 条诱饵含同书 pagination/dynamic 与跨书 selector/schema/adaptive；3 条边界含与 pagination 的分界（先对条数后算分）。"
+}

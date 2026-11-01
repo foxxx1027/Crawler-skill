@@ -1,0 +1,73 @@
+{
+  "skill": "reverse-engineering-tooling-and-collaboration",
+  "version": "0.1.0",
+  "source_book": "《灰帽黑客 第4版》 — Daniel Regalado 等",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "团队怎么共享 IDA 数据库并合并各自的注释？",
+      "expected_behavior": "应激活本 skill，给出共享 IDB、分段协作与合并流程",
+      "notes": "正面：IDB 协作"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "怎么用 IDAPython 插件批量标注函数和结构体？",
+      "expected_behavior": "应激活本 skill，给出插件结构与批处理步骤",
+      "notes": "正面：IDAPython 工具化"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "分析完样本，怎么把 IOC 沉淀成 YARA 规则并放到沙箱里用？",
+      "expected_behavior": "应激活本 skill，按签名提取、验证与沙箱部署流程执行",
+      "notes": "正面：知识沉淀"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我从这个 stripped ELF 找 main 并恢复结构体",
+      "expected_behavior": "不应激活本 skill，应激活同书 source-and-binary-static-audit",
+      "notes": "跨 skill 混淆诱饵（硬性要求）"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "帮我分析这个 APK 的恶意行为",
+      "expected_behavior": "不应激活本 skill，应激活同书 android-malware-triage",
+      "notes": "诱饵：样本分诊"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "怎么把这段汇编还原成 C++ 类型",
+      "expected_behavior": "不应激活本 skill，应走 cpp-semantic-recovery",
+      "notes": "诱饵：语义还原"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "两个人同时改一个 IDB，冲突了怎么办？",
+      "expected_behavior": "应激活本 skill，按分段/导出合并/版本化流程解决",
+      "notes": "边界：协作冲突"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "IDA 插件和 Ghidra 脚本应该怎么选？",
+      "expected_behavior": "应激活本 skill 的工具化选型部分，但需说明本书以 IDA 为主",
+      "notes": "边界：工具选型"
+    },
+    {
+      "id": "edge-03",
+      "type": "edge_case",
+      "prompt": "帮我查一下这个函数的地址",
+      "expected_behavior": "不应激活本 skill，这是单点查询，不需要工具化与协作流程",
+      "notes": "边界：简单查询"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "3 条 should_trigger + 3 条 should_not_trigger（含至少 1 条同书兄弟 skill 混淆诱饵）+ 3 条 edge_case；全部 should_not_trigger 必须通过。"
+}

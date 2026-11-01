@@ -1,0 +1,127 @@
+{
+  "skill": "scrapy-new-site-onboarding",
+  "version": "0.1.0",
+  "source_book": "《Scrapy网络爬虫实战》 — 东郭大猫",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "领导丢给我一个网址，说从明天起让我盯着它，每周整理一份岗位清单；我连第一步该干什么都没想好",
+      "expected_skill": "scrapy-new-site-onboarding",
+      "rationale": "典型从零接手陌生站点：数据来源未判、项目未建、出口未定",
+      "expected_behavior": "先判数据是否在初始 HTML（看文档请求响应体大小与条数），再用 Shell 验表达式，最后建骨架",
+      "notes": "正面场景：接手新站，尚无任何代码"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我怀疑那个商品列表是后来才加载出来的，因为 response.body 里几乎什么都没有；先别管循环怎么写，我该怎么确认？",
+      "expected_skill": "scrapy-new-site-onboarding",
+      "rationale": "写 parse 之前判通道，是 onboarding 的第一步",
+      "expected_behavior": "比对文档响应体大小与条数是否等于首页条数；确认由 XHR 返回则改按接口建 Spider，不在 Elements 继续抠",
+      "notes": "正面场景：数据可能在初始 HTML 之外"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "浏览器里正文好好的，脚本下回来的 HTML 却是个空架子，我该先怀疑解析写错，还是这个页本来就不是静态的？",
+      "expected_skill": "scrapy-new-site-onboarding",
+      "rationale": "页面与浏览器不一致的分诊，先排除渲染缺失再怀疑表达式",
+      "expected_behavior": "用 scrapy view 把实际下载结果丢进浏览器对照；内容本来就不在静态 HTML 里则判通道问题，否则才是表达式问题",
+      "notes": "正面场景：渲染差异与选择器错误的区分"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "能不能不启动整个工程，就在命令行里对着真实响应把几条取值表达式跑一遍看看命中几条？",
+      "expected_skill": "scrapy-new-site-onboarding",
+      "rationale": "Shell 是接入流程里的验收门，不是单纯调试技巧",
+      "expected_behavior": "起 scrapy shell 对真实 Response 逐条跑，比对命中数；命中为 0 先回通道判断",
+      "notes": "正面场景：表达式进代码前的验收"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "数据是能下来了，可我不知道该存成文件还是直接进库，后面还要每周补新的",
+      "expected_skill": "scrapy-new-site-onboarding",
+      "rationale": "出口未定属于接入 SOP 的收尾步骤",
+      "expected_behavior": "先定 Item 字段再定落点，写进 Pipeline 并在 settings 注册，小批量验收字段完整率",
+      "notes": "正面场景：能抓但出口未定（与 requirements-first-data-model 有交叉，见测试记录）"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "同事说先看网络面板再看元素面板，这两个到底各自回答什么问题？",
+      "expected_skill": "scrapy-new-site-onboarding",
+      "rationale": "Network 管数据由哪条请求返回，Elements 管字段落在哪个节点，是接入的第一步认知",
+      "expected_behavior": "解释两者分工：数据来源问 Network，节点位置问 Elements，顺序不可颠倒",
+      "notes": "正面场景：接入前的工具分工"
+    },
+    {
+      "id": "should-trigger-07",
+      "type": "should_trigger",
+      "prompt": "Brand-new target and a two-week deadline: I need to know whether the content is already in the raw HTML before I sink time into writing a spider.",
+      "expected_skill": "scrapy-new-site-onboarding",
+      "rationale": "英文版同义场景：先判服务端渲染，再投入写爬虫",
+      "expected_behavior": "先做通道判断（响应体与条数），确认静态可拿再建项目；否则改接口或提级手段",
+      "notes": "正面场景（英文）"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我用的是那个会自动顺着链接走的爬虫，规则也配了，可日志里只有起始地址那一条，后面再没动静",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "CrawlSpider 规则职责问题，不是接入通道判断",
+      "expected_behavior": "不激活本 skill；查 parse 是否被覆写、列表页是否误挂 callback、入口是否绕过规则",
+      "notes": "同书兄弟诱饵：规则不跟进"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我把并发调大之后跑起来还是老样子，怀疑我改的那个文件压根没被读到",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "值是配置优先级/作用域问题，接入流程已跑通",
+      "expected_behavior": "不激活本 skill；按 -s > custom_settings > 项目 settings 找覆盖者，先确认是否在项目内运行",
+      "notes": "同书兄弟诱饵：配置未生效"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "The selector from the tutorial works for the author, but I get nothing — did I mistype the syntax?",
+      "expected_skill": "semantic-selector-robustness",
+      "rationale": "页面已能抓到，只差表达式写法，属于选择器问题而非接入分诊",
+      "expected_behavior": "不激活本 skill；检查锚点绑定与解析库选型，用可验算字段核对命中",
+      "notes": "跨书诱饵（英文）：只差选择器写法"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "这个站详情得滚到底才出现内容，我在想是不是干脆上无头浏览器，还是先试试别的取数办法",
+      "expected_skill": "data-path-cost-ladder",
+      "rationale": "问题已收敛为取数路径比较，属于成本阶梯而非接入 SOP",
+      "expected_behavior": "不激活本 skill；按打印版/内嵌 JSON/接口/渲染逐级比较成本",
+      "notes": "跨书诱饵：取数通道取舍"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "同一个链接，我用浏览器看到的价和脚本拿到的价有时候不一样，有时候又一样",
+      "expected_skill": "scrapy-new-site-onboarding",
+      "rationale": "表面是页面不一致，但时好时坏提示可能是按身份/地区分桶，而非渲染差异",
+      "expected_behavior": "先 view + Shell 对照；若两者都正常、只有换身份才复现，则判为服务端身份分桶，转 anti-bot-triage-and-human-parity",
+      "notes": "边界：判据是 view/Shell 是否复现差异；稳定复现=渲染/通道，换身份才复现=身份分桶"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "这个站有公开的 sitemap.xml，我还需要按页面那套来吗？",
+      "expected_skill": "data-path-cost-ladder",
+      "rationale": "已有结构化出口时接入 SOP 不适用，应直接读结构化数据",
+      "expected_behavior": "不激活本 skill；优先读 sitemap/官方 API，避免从页面重做通道判断",
+      "notes": "边界：判据是站点是否已有机器可读出口"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "7 条应调用 / 4 条诱饵（2 条同书兄弟、2 条跨书，其中 1 条英文）/ 2 条边界模糊。"
+}

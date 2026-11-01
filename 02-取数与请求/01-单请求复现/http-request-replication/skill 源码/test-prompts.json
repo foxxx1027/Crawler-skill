@@ -1,0 +1,52 @@
+{
+  "skill": "http-request-replication",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "接口我找到了，可用 requests 直接 GET 那条 URL 就返回 400；浏览器里同一请求还带了 X-Requested-With 和 Referer。",
+      "expected_behavior": "应激活 http-request-replication，把这次请求拆成四件套凑齐：方法 + URL（含查询参数）、请求头（补齐 X-Requested-With/Referer/UA 等）、cookie、正文，逐项与浏览器比对后再判定差异，而不是猜参数。",
+      "notes": "正面场景：复现某次请求时字段缺失，description 明写"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "复现那条 POST 时字段名和值我都抄对了，但服务端回回来是一整页 HTML 报错页，不是我以为的 JSON。",
+      "expected_behavior": "应激活 http-request-replication，指出响应要先验再用：断言 Content-Type 与关键字段，把“抓取失败”提前成“数据校验失败”，并把网络失败（404/500）与解析失败（结构不符）分开处理。",
+      "notes": "正面场景：响应格式不符，属 description 的“响应格式不符”"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "浏览器里那条 PUT 请求带了一段 JSON body，我要用 requests 写成和浏览器一模一样，需要注意哪些部分？",
+      "expected_behavior": "应激活 http-request-replication，按四件套（方法/URL/请求头/正文）逐项还原，指明 Content-Type 与 body 序列化方式必须与浏览器一致，并提醒失败要按请求/字段隔离记录（URL + 状态码）。",
+      "notes": "正面场景：复现带正文的请求，是“请求复现”的直接对象"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "登录表单每刷新一次 _formkey 就变一个值，还得和同一次 GET 拿到的 cookie 一起提交；提交完我怎么确认真的登录进去了？",
+      "expected_behavior": "不应激活 http-request-replication，因为问题核心是一次性隐藏 token 与会话 cookie 的配对以及写后回读断言，应激活 form-hidden-state-and-readback。",
+      "notes": "跨 skill 混淆诱饵：LINKS/MERGE_PLAN 点名两者对照，登录表单是最容易被两条 skill 同时认领的场景"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "curl 里 -b 和 -c 两个参数分别是什么意思？我总是记混。",
+      "expected_behavior": "不应激活本 skill，因为这是命令行参数的信息查询，没有要复现的请求与失败现场。",
+      "notes": "诱饵：纯信息查询，且含 cookie 关键词"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我用 requests.Session() 提交一个只有两个可见字段的表单，当时成功了；过一会儿再用同一个 session 请求，却开始返回 401。",
+      "expected_behavior": "应激活 http-request-replication：先按四件套核对后续请求是否都带着那次登录回传的 cookie、把 401/302 跳登录页单独识别，并建议用同一个 Session 贯穿而非手工搬 cookie；只有确认每次页面都下发不同隐藏 token 且必须与同次 GET 的 cookie 配对时，才转 form-hidden-state-and-readback。",
+      "notes": "边界：会话失效既可能是四件套漏带 cookie，也可能是隐藏 token 配对问题"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

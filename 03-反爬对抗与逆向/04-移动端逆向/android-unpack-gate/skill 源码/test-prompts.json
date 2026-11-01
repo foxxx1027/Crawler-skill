@@ -1,0 +1,52 @@
+{
+  "skill": "android-unpack-gate",
+  "version": "0.1.0",
+  "source_book": "《爬虫逆向进阶实战》 — 李玺",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "查壳工具报「未发现加固」，可反编译出来只有四百多个类，业务类一个都搜不到，App 在真机上跑得好好的",
+      "expected_behavior": "应激活 android-unpack-gate，不信单一通道：按产物形态（类数异常少、关键类搜不到、多种工具都失败）判为有壳，并把厂商名翻译成保护机制代际",
+      "notes": "正面场景：查壳误报 + 产物形态异常"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "确认有壳了，工具一大堆，我不知道该选哪类，也不知道脱到什么程度算够",
+      "expected_behavior": "应激活 android-unpack-gate，按代际（整体加密→不落地加载→指令抽取→指令替换）选脱壳时机与 Hook 点，并明确「够用即止」：能读到参数生成逻辑就停，不追求能回编译",
+      "notes": "正面场景：代际判断与够用标准"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "dump 出来十几个 dex，合并进反编译工具直接 OOM，怎么分批还不漏类",
+      "expected_behavior": "应激活 android-unpack-gate，给出产物处理路径：改名成 classes*.dex 塞回原 APK、按体积分批只反编译可疑批次，并记录已排除范围",
+      "notes": "正面场景：脱壳产物处理，属「dump dex / 内存 dump」范畴"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "jadx 和 dex2jar 的输出有什么区别，哪个看伪代码更清楚",
+      "expected_behavior": "不应激活本 skill，这是纯工具知识问答，没有「判壳、选代际」的决策成分",
+      "notes": "诱饵：纯知识"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "能正常反编译、关键类也都搜得到，我现在只想定位 sign 写在哪个类里",
+      "expected_behavior": "不应激活本 skill，应激活 android-param-locate，壳这一关已经过了",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：可反编译就该直接定位"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "壳也脱了、dex 也塞回去了，可还是搜不到签名类，要不要回头把壳修到能回编译",
+      "expected_behavior": "可以激活 android-unpack-gate 做收尾判断，但结论应是判停：停止条件是「能搜到并读出参数生成逻辑」，补完所有批次仍搜不到就转 native 方向；修到可回编译不在目标内",
+      "notes": "边界：够用即止 vs 追求完美脱壳，要给出停止条件"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

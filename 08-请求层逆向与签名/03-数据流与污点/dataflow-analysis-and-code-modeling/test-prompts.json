@@ -1,0 +1,73 @@
+{
+  "skill": "dataflow-analysis-and-code-modeling",
+  "version": "0.1.0",
+  "source_book": "《逆向与漏洞分析》 魏强、武泽慧",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "df-01",
+      "type": "should_trigger",
+      "prompt": "这段 C 代码里 p 到底在哪些路径上被释放了两次？我想把 Double Free 的规则落到基本块和 CFG 上算一遍。",
+      "expected_behavior": "应激活 dataflow-analysis-and-code-modeling，并先用入口语句切基本块、建 CFG，再按 free 状态自动机做带函数摘要的数据流迭代，指出重复释放的程序点。",
+      "notes": "典型触发（状态类漏洞落规则）。防与 taint-analysis 混淆：没有外部 source，问的是指针状态在路径上的事实。"
+    },
+    {
+      "id": "df-02",
+      "type": "should_trigger",
+      "prompt": "活跃变量分析我写到第三轮，循环回边那块值还在变，是不是得先确认不动点，还是我的 Gen/Kill 写错了？",
+      "expected_behavior": "应激活 dataflow-analysis-and-code-modeling，并检查逆向分析的 In/Out 方程、循环回边与不动点判定，区分是方程写反还是不收敛。",
+      "notes": "典型触发（数据流方程与不动点）。防与运行期调试混淆：问的是静态迭代是否收敛。"
+    },
+    {
+      "id": "df-03",
+      "type": "should_trigger",
+      "prompt": "where does this value come from？我想在这段函数上建 SSA，把 reaching definitions 和 use-def 链追出来，看看它到底从哪来。",
+      "expected_behavior": "应激活 dataflow-analysis-and-code-modeling，并构建 SSA（含 φ 函数）与到达定值方程，输出该变量的 def-use/use-def 链。",
+      "notes": "英文 trigger 触发。防与 taint-analysis 混淆：没有 source/sink 语义，只要通用定值事实。"
+    },
+    {
+      "id": "df-04",
+      "type": "should_trigger",
+      "prompt": "扫描器说这里可能 UAF，可我看那两个分支一个要求大于零一个要求小于零，根本走不到一起，怎么从代码结构上把这条误报排掉？",
+      "expected_behavior": "应激活 dataflow-analysis-and-code-modeling，并检查流敏感/路径敏感精度与互斥分支的定值合并，给出误报依据；若仍需真实可达性再说明转符号执行。",
+      "notes": "无术语但情境相同（扫描器误报、路径可行性）。防与 symbolic-execution 混淆：此处先做静态上近似与互斥分支核对，不要求生成输入。"
+    },
+    {
+      "id": "df-05",
+      "type": "should_not_trigger",
+      "prompt": "用户输入最后进了 executeQuery，我想确认这条不可信数据到底能不能一路流到 SQL 执行点，中间有没有被过滤。",
+      "expected_behavior": "不应激活本 skill，应激活 taint-analysis，因为问题已给定 source（用户输入）与 sink（executeQuery），要判定的是污点可达性而非通用数据流事实。",
+      "notes": "跨 skill 诱饵（污点分析）。dataflow 是污点的底层模型，但用户明确问 source→sink，应由 taint-analysis 主导。"
+    },
+    {
+      "id": "df-06",
+      "type": "should_not_trigger",
+      "prompt": "这个数组访问的下标来自输入，我只想知道能不能真的越界，最好直接给我一组能触发它的具体输入。",
+      "expected_behavior": "不应激活本 skill，应激活 symbolic-execution，因为用户要的是路径条件与约束求解生成可执行输入，静态数据流只能给上近似。",
+      "notes": "跨 skill 诱饵（符号执行）。关键词“具体输入/触发”是分界；dataflow 不生成输入。"
+    },
+    {
+      "id": "df-07",
+      "type": "should_not_trigger",
+      "prompt": "我只有两天，手上既有源码又有二进制，数据流、污点、符号执行和 fuzz 都想用，到底先上哪个、时间怎么分配？",
+      "expected_behavior": "不应激活本 skill，应激活 program-analysis-technique-selection，因为当前要决定技术组合与预算，而不是执行某一条数据流分析流程。",
+      "notes": "跨 skill 诱饵（技术选型）。防把“提到数据流”当成“要落地数据流方程”。"
+    },
+    {
+      "id": "df-08",
+      "type": "edge_case",
+      "prompt": "有源码和 LLVM IR，我只想看这个变量在循环里怎么传播，不需要具体输入也不打算做符号执行，数据流方程够用吗？",
+      "expected_behavior": "应激活 dataflow-analysis-and-code-modeling，并限定为流敏感/函数内（必要时函数间摘要）的 May/Must 上近似分析，明确不输出触发输入。",
+      "notes": "边界应调用：有 IR、目标只是通用传播事实；需限定分析精度并声明不承诺真实可达性。"
+    },
+    {
+      "id": "df-09",
+      "type": "edge_case",
+      "prompt": "目标是个加壳闭源程序，反汇编都乱，也没有 IR，还不能插桩，能不能直接上数据流分析把漏洞扫出来？",
+      "expected_behavior": "不应激活本 skill，应激活 anti-debugging-and-unpacking，因为无中间表示且无法插桩，数据流建模的前提不成立，必须先解决表示问题。",
+      "notes": "边界不应调用：无 IR/无法插桩，属于 B 段硬边界；与 df-08 形成对照。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "共 9 条：4 should_trigger（2 典型、1 英文 trigger、1 无术语同情境）+ 3 should_not_trigger（污点分析、符号执行、技术选型三个跨 skill 诱饵）+ 2 edge_case（有 IR 但仅需静态传播；无 IR 且无法插桩）。诱饵容错为 0，重点区分“通用数据流事实”与“source→sink 污点”“路径条件求解生成输入”。"
+}

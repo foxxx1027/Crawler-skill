@@ -1,0 +1,136 @@
+{
+  "skill": "scrapy-middleware-layering",
+  "version": "0.1.0",
+  "source_book": "《Scrapy网络爬虫实战》 — 东郭大猫",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我在请求发出那一层塞了段换出口 IP 的代码，日志里一点痕迹没有，出口也没变",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "插件写了不执行，先查层与注册，属于链上结构问题",
+      "expected_behavior": "查逻辑是否注册在对应字典、层是否选对、每个分支是否显式 return",
+      "notes": "正面场景：写了不生效"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我加了个按小区名计数的钩子，跑完统计里根本没有那个键，import 也没报错",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "钩子从未被调用，是层/注册问题，不是统计写法",
+      "expected_behavior": "确认注册在 SPIDER 或 DOWNLOADER 对应字典，并用可搜索日志/stats 键证明被调用",
+      "notes": "正面场景：静默不执行"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "详情页的请求我明明 yield 了，可调度器入队数比我手数的少一截，还一条报错没有",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "请求在链上消失，典型是输出契约只透传 Item",
+      "expected_behavior": "对账 Spider 吐出的 Request 数 vs enqueued；定位只 yield item 的 process_spider_output 并改为逐项透传",
+      "notes": "正面场景：请求消失"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "有一批链接返回 404，我想在回调里记一下，可那个回调一次都没进；200 的就能进",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "非 2xx 在进入 Spider 前被内置层过滤，属中间件层问题",
+      "expected_behavior": "说明 HttpError 层拦截，用 handle_httpstatus_list / meta 放行并在回调内自行判状态码",
+      "notes": "正面场景：状态码被拦"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "这段逻辑到底该挂在请求发出之前，还是接在页面解析之后，还是干脆放到写库那一步？",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "选层问题：Downloader / Spider / Pipeline 三条轴各管一段",
+      "expected_behavior": "按能看到的对象判层：改请求响应用下载器轴，看 Item/Request 用 Spider 轴，只碰 Item 用 Pipeline",
+      "notes": "正面场景：选层犹豫"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "两个扩展我填了同一个数字，结果一个先跑一个后跑，我想知道这个先后是谁定的",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "同号顺序要靠 BASE 表与合并规则推，不是直觉",
+      "expected_behavior": "查对应 MIDDLEWARES_BASE 坐标，说明合并而非覆盖、响应方向逆序",
+      "notes": "正面场景：顺序不对"
+    },
+    {
+      "id": "should-trigger-07",
+      "type": "should_trigger",
+      "prompt": "我把清洗日期的逻辑也写进了那个钩子，结果连翻页链接都没了，这俩到底什么关系",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "输出契约被破坏，同时暴露选层错误（清洗应在 Pipeline）",
+      "expected_behavior": "先恢复 Request 透传，再把字段清洗移到 Pipeline，并说明两者边界",
+      "notes": "正面场景：契约破坏 + 选层错误"
+    },
+    {
+      "id": "should-trigger-08",
+      "type": "should_trigger",
+      "prompt": "My custom hook that adds headers never fires and there's no exception — where does it go if it's registered at all?",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "英文版同义：注册了却不执行，先查字典与层",
+      "expected_behavior": "核对是否写进正确的 MIDDLEWARES 字典、是否被同路径 None 禁用、是否有显式 return",
+      "notes": "正面场景（英文）"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我在配置文件里登记了那个写库的组件，可它一次都没执行，是不是排在前面的把值盖了？",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "组件未启用/配置来源问题，不是链上顺序或返回值契约",
+      "expected_behavior": "不激活本 skill；确认是否注册键名正确、是否被上层配置覆盖",
+      "notes": "同书兄弟诱饵：配置未生效"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "列表只给标题和链接，正文在点进去那一页，我怎么把两页凑成一条？",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "跨回调状态链问题，与链上结构无关",
+      "expected_behavior": "不激活本 skill；用 meta 携带半成品逐跳补字段，末跳断言",
+      "notes": "同书兄弟诱饵：多页组装"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "I copied the request headers and cookies from my browser, but the server still treats me as logged out.",
+      "expected_skill": "http-request-replication",
+      "rationale": "单次请求复现字段不全，属请求复刻而非中间件链",
+      "expected_behavior": "不激活本 skill；逐字段比对请求快照，检查会话与编码",
+      "notes": "跨书诱饵（英文）：请求复现"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "跑到一半突然全 403，我想知道是被限速了还是被识别成机器人",
+      "expected_skill": "anti-bot-triage-and-human-parity",
+      "rationale": "是被拦后的信号分诊，不是链路内部结构问题",
+      "expected_behavior": "不激活本 skill；按渲染/参数/会话/身份/交互分层诊断，先不改中间件",
+      "notes": "跨书诱饵：反爬分诊"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "只有一个地址想放宽状态码，值得为此专门写一层吗？",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "单请求例外应走 meta，中间件是过度工程",
+      "expected_behavior": "不新建中间件；在 Request.meta 上设 handle_httpstatus_list，并说明这是本 skill 的排除区",
+      "notes": "边界：判据是影响面只有一个请求还是全局"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "我想在这一层里把日期统一格式，顺手也把重复的去掉，可以吗？",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "清洗与去重属 Pipeline，放进 Spider 中间件会与 Item 定义分离且易吞请求",
+      "expected_behavior": "不建议写在该层；把清洗/去重移到 Pipeline，并解释中间件在链上、Pipeline 只在 Item 出口",
+      "notes": "边界：判据是这段逻辑是否需要改变请求走向"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "8 条应调用 / 4 条诱饵（2 条同书兄弟、2 条跨书，其中 1 条英文）/ 2 条边界模糊。"
+}

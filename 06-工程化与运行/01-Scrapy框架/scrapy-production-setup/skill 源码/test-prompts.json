@@ -1,0 +1,52 @@
+{
+  "skill": "scrapy-production-setup",
+  "version": "0.1.0",
+  "source_book": "《用 Python 写网络爬虫（第2版）》 — Katharine Jarmul / Richard Lawson",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "刚用 scrapy startproject 建好项目，跑了两小时就被站点限速。同事说默认对同域 16 个并发、请求之间零延时，我该改哪几个设置？",
+      "expected_behavior": "应激活 scrapy-production-setup，第一步覆盖默认吞吐：CONCURRENT_REQUESTS_PER_DOMAIN 改 1、DOWNLOAD_DELAY 改成站点可接受的值（并说明延时自带随机偏移），再讨论规则成对与续跑。",
+      "notes": "正面场景：Scrapy 被限速 + 默认配置，description 的核心"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "CrawlSpider 跑完了任务，我怎么知道是不是把全站都抓到了？stats 里 dupefilter/filtered 有 61 条正常吗？",
+      "expected_behavior": "应激活 scrapy-production-setup，给出 stats 对账方法：downloader/request_count 与 item_scraped_count 要能和业务总量（如数据库行数）对上，dupefilter/filtered 说明去重生效；并提醒业务主键去重与增量抓取要自己补。",
+      "notes": "正面场景：抓全了没，description 的 trigger 词"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "要抓的站有 50 万页，跑到一半总得停机维护重启，Scrapy 能不能从上次的进度接着跑？",
+      "expected_behavior": "应激活 scrapy-production-setup，用 JOBDIR 把调度状态落成 requests.queue / requests.seen / spider.state 三个文件，强调必须优雅退出（按一次 Ctrl+C 等它写完，两次会强杀），且多个爬虫各自一个目录。",
+      "notes": "正面场景：重启后重复抓/中断恢复，description 明写"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我不想动爬虫逻辑，只希望已经抓过的页面别再下第二遍，能存本地做离线调试就行。",
+      "expected_behavior": "不应激活 scrapy-production-setup，因为这不是框架选型或生产化配置，而是“存储换重跑”的成本置换，应激活 cache-as-cost-tradeoff。",
+      "notes": "跨 skill 混淆诱饵：LINKS 点名 cache 与 scrapy-production-setup 对照，JOBDIR 与缓存都会被“别重下”联想到"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "用 pip 装 scrapy 时提示缺少编译器，这个环境问题一般怎么解决？",
+      "expected_behavior": "不应激活本 skill，因为这是依赖安装的纯信息查询，不涉及 Spider 类型、吞吐配置或续跑。",
+      "notes": "诱饵：纯信息查询，且含 scrapy 关键词"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "一个只有 40 个固定 URL 的小站，用 requests + BeautifulSoup 就够了，还是应该上 Scrapy？",
+      "expected_behavior": "不应激活 scrapy-production-setup 的生产化流程（它面向长任务、需调度去重限速续跑的项目）：40 个固定 URL 用 requests + BS4 足够；只有当遍历范围扩到全站、或需要断点续跑与 stats 对账时，才回来按“遍历什么、抽哪类页”选 Spider 类型。",
+      "notes": "边界：在问框架，但规模与运维需求都达不到“上生产”"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

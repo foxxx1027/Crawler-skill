@@ -1,0 +1,52 @@
+{
+  "skill": "cache-as-cost-tradeoff",
+  "version": "0.1.0",
+  "source_book": "《用 Python 写网络爬虫（第2版）》 — Katharine Jarmul / Richard Lawson",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "同一个 4000 页的站，我每改一次选择器就要重新下载 40 分钟，调试全耗在等网络上了。",
+      "expected_behavior": "应激活 cache-as-cost-tradeoff，用两个判据（是否必须最新、是否会重跑）判定该上缓存，给出梯度（进程内字典 → 磁盘 → 共享键值存储），并说明缓存命中不应触发限速等待。",
+      "notes": "正面场景：同一批页面被反复重跑，description 明写的触发"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "抓了两天才发现，磁盘缓存里好几个不同 URL 被当成同一个文件，读出来的内容是别的页面的。",
+      "expected_behavior": "应激活 cache-as-cost-tradeoff，指出 URL→文件名是有损映射（字符替换与长度截断不可逆）导致键碰撞、命中率虚高，给出更安全的键设计（哈希/分层目录）并说明文件数上限（FAT32 65535、ext4 约 3100 万）的约束。",
+      "notes": "正面场景：缓存键碰撞，description 明写 cache key 与后端选择"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "大任务跑到一半机器断电，第二次启动把已经抓过的几千页又全部重下了。",
+      "expected_behavior": "应激活 cache-as-cost-tradeoff，把缓存定位为断点续跑（并附带离线分析、降低对方负载两个副产品），同时提醒缓存里存的是“HTML + 状态码”、5xx 必须作废重下、表示形态（str/bytes）必须与下游解析器输入一致。",
+      "notes": "正面场景：任务被中断需要续跑，是 description 的“会被中断”"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "对方站点限我速度，我要把同域并发从 16 降到 1，两次请求之间加 5 秒延时。",
+      "expected_behavior": "不应激活 cache-as-cost-tradeoff，因为这是速率预算问题，应激活 crawl-pacing-and-concurrency，按对方配额与本机拐点来定并发与延时。",
+      "notes": "跨 skill 混淆诱饵：MERGE_PLAN/LINKS 点名 cache 与 pacing 对照，两者的症状都是“跑得慢/太重”"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Redis 的 RDB 和 AOF 两种持久化方式在恢复速度和数据完整性上有什么差别？",
+      "expected_behavior": "不应激活本 skill，因为这是存储中间件机制的纯信息查询，没有抓取任务的成本置换要算。",
+      "notes": "诱饵：纯信息查询，且含 Redis 关键词"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "这次只抓一遍，抓完就归档，不打算再跑。还需要上缓存吗？",
+      "expected_behavior": "不应激活 cache-as-cost-tradeoff 的完整设计（一次性抓取属 description 的排除项），因为省下的请求数为零、却要付存储与过期风险；只有当你预期调试阶段会反复重跑同一批页面时，才建议先加一层进程内字典。",
+      "notes": "边界：有“大任务”的外观，但缺少“会重跑/会中断”这个必要判据"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

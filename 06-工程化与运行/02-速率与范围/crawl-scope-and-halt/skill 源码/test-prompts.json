@@ -1,0 +1,52 @@
+{
+  "skill": "crawl-scope-and-halt",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我写了个全站爬虫，跑了一整晚日志还在涨，同一个页面被翻来覆去抓，URL 已经变成 blogs/blogs/.../blogs/post.php 这种了。",
+      "expected_behavior": "应激活 crawl-scope-and-halt，指出缺刹车：先用 set 做 O(1) 去重，再用域名或 URL 正则限域（这类站点会按当前 URL 生成新 URL，单靠去重会失效），最后补最大深度/最大页数预算。",
+      "notes": "正面场景：跑飞 + 环形 URL 重复抓，是 description 的核心触发"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "到底要不要跟外链？我担心爬着爬着出了站，也说不清哪些页该抓哪些不该抓。",
+      "expected_behavior": "应激活 crawl-scope-and-halt，用四问决策（能否靠预定义站点拿到数据、到站后深入还是跳走、有没有不想抓的类型、如何避免法律责任），把答案映射到“写不写内外链函数”，而不是由技术顺手决定。",
+      "notes": "正面场景：内/外链范围决策，description 明确覆盖"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "脚本递归到 900 多层时报 RecursionError，但站点实际没那么深，我该怎么给它装个上限？",
+      "expected_behavior": "应激活 crawl-scope-and-halt，说明 Python 默认递归上限 1000 只是侥幸不是设计，应显式设最大深度/最大页数/请求预算，并定义正常结束（队列空、达深度上限、连续 N 页无新内容）与异常结束（403/封禁、预算耗尽）的停机条件与告警。",
+      "notes": "正面场景：递归爆栈 + 停机条件缺失"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我的全站遍历爬虫一小时只抓了 200 页，想开几个进程、把延时调小一点加速。",
+      "expected_behavior": "不应激活 crawl-scope-and-halt，因为范围与去重已经清楚，问题在速率预算，应激活 crawl-pacing-and-concurrency（并发与延时是同一笔预算）。",
+      "notes": "跨 skill 混淆诱饵：同书 pacing 与本 skill 常在同一项目连用，且都出现在“全站爬虫”场景"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Python 的 set 和 frozenset 在插入与查询性能上差多少？",
+      "expected_behavior": "不应激活本 skill，因为这是数据结构的纯信息查询，没有遍历范围或停机条件要设计。",
+      "notes": "诱饵：纯信息查询，且含去重集合的实现细节"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "这次只抓一份固定的 50 条 URL 清单，不做链接发现，还需不需要去重和限域？",
+      "expected_behavior": "不应激活完整的 crawl-scope-and-halt 方法论（description 已排除少量已知页面），只在清单内用 set 防重复提交即可；一旦要沿链接遍历或跨站，再回来建三条约束。",
+      "notes": "边界：有“抓多页”的外观，但没有遍历，因此不需要限域/限深"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

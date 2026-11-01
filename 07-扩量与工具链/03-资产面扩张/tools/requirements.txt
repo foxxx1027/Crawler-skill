@@ -1,0 +1,6 @@
+requests>=2.31
+curl_cffi>=0.7          # --rotate-tls：伪装 Chrome/Safari 的 TLS + HTTP2 指纹
+playwright>=1.44        # 无头渲染（需 playwright install chromium）
+trafilatura>=1.8        # 正文抽取
+simhash>=2.1.2          # 内容级去重
+pandas>=2.2             # 导出 parquet

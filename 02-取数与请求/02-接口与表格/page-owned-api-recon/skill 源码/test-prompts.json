@@ -1,0 +1,52 @@
+{
+  "skill": "page-owned-api-recon",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "某平台的列表页在浏览器里往下滚就自动加载更多，可 HTML 里永远只有 10 条。Network 面板里那条返回 JSON 的 XHR 是不是就是它自己用的接口？",
+      "expected_behavior": "应激活 page-owned-api-recon，先判数据在初始 HTML 还是 JS 通道，再按无文档接口三特征（返回 JSON/XML、GET 带参数、类型 XHR）筛出那条请求，并归档五要素（方法、路径与参数、请求头含 cookie、正文、响应头与正文类型）。",
+      "notes": "正面场景：滚动加载 + 页面自有 XHR，description 的核心场景"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "接口找到了，但换个搜索词它就返回 {\"success\": true} 里面什么都没有。我 print 出来以为是空结果，但页面上明明有数据。",
+      "expected_behavior": "应激活 page-owned-api-recon，强调解析前先断言响应格式（正常 JSON / success 包裹 / 错误对象 / 栈跟踪 / 普通英文都可能），并把“换了参数时请求和响应怎么变”记进归档，避免 json.loads 直接炸。",
+      "notes": "正面场景：响应格式不符 + 参数变化未记录"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "这个站官方根本没给我们 API 文档，但页面数据是齐的。有没有办法找到它自己调的那条请求？",
+      "expected_behavior": "应激活 page-owned-api-recon，说明无文档接口是常态、页面能显示数据就一定有可观察的请求通道，给出“关闭 JS 做对照 → 筛 XHR/JSON → 归档五要素 → 先验格式”的四步。",
+      "notes": "正面场景：问有没有内部接口，description 明写"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "数据在初始 HTML 里就有，静态解析就能拿到，我只想知道商品表格里第几列用 nth-child 怎么写。",
+      "expected_behavior": "不应激活 page-owned-api-recon，因为数据不在 JS/接口通道里，应激活 semantic-selector-robustness 处理选择器写法与稳健性。",
+      "notes": "跨 skill 混淆诱饵：LINKS 点名 page-owned-api-recon 与 semantic-selector-robustness 对照，两者都在“取到数据”环节抢调用"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "JSON 和 XML 在大文件解析时各自的性能特点是什么？",
+      "expected_behavior": "不应激活本 skill，因为这是数据格式的纯信息查询，没有“页面在调哪条请求”的侦察任务。",
+      "notes": "诱饵：纯信息查询，且含 JSON/XML 关键词"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "页面数据不是 XHR 拉的，而是写死在 <script> 里一个叫 window.__INITIAL_STATE__ 的变量里。这还算“接口侦察”吗？",
+      "expected_behavior": "应激活 page-owned-api-recon：第一步判定就把 JS 通道分成“内嵌变量”和“XHR/fetch”两种、恰好覆盖这种情况，做法是直接读源码、正则切片取出变量再按 JSON 解析；但若用户接着问“要不要上浏览器”，那属于 data-path-cost-ladder 的阶梯排序。理由：仍是复用页面自己的数据通道，只是不叫接口。",
+      "notes": "边界：没有 XHR，形式上不像“接口”，但方法的第一步已包含内嵌变量通道"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

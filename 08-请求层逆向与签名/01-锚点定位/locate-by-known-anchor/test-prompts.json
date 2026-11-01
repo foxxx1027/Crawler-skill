@@ -1,0 +1,52 @@
+{
+  "skill": "locate-by-known-anchor",
+  "version": "0.1.0",
+  "source_book": "《漏洞战争：软件漏洞分析精要》 林桠泉",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我只知道漏洞函数附近有个很特殊的字符串，怎么快速定位到函数？",
+      "expected_behavior": "激活 locate-by-known-anchor，用字符串/特征码 xrefs 定位并排序锚点可靠性",
+      "notes": "正面：字符串锚点"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "目标没有符号表，怎么靠类函数名或命名规律找到目标函数？",
+      "expected_behavior": "激活本 skill，用符号表/类方法命名规律定位",
+      "notes": "正面：符号与命名锚点"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "怎么根据一个文件格式规范反推某字段的语义？",
+      "expected_behavior": "激活本 skill，用格式字段映射（规范↔二进制）反推",
+      "notes": "正面：格式字段锚点"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "这个崩溃要怎么一步步回溯到根因",
+      "expected_behavior": "不应激活本 skill；应激活 crash-to-root-cause（无锚点、只能从现场逆推）",
+      "notes": "诱饵：定位话题但方法是回溯"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "这个驱动没有文档，怎么找它的 IOCTL 处理函数？",
+      "expected_behavior": "不应激活本 skill；应激活 reverse-driver-and-unknown-structure（驱动接口逆向）",
+      "notes": "跨 skill 混淆诱饵：与驱动逆向 skill 抢调用"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我在 IDA 里搜到了一个字符串，但不确定它是不是我要找的那个",
+      "expected_behavior": "边界：可激活本 skill，但要强调'搜索到 ≠ 命中'，需用动态命中/调用上下文收口，而不是搜到就当真",
+      "notes": "边界：锚点可靠性未确认"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

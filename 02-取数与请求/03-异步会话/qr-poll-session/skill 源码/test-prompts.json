@@ -1,0 +1,100 @@
+{
+  "skill": "qr-poll-session",
+  "version": "0.1.0",
+  "source_book": "《Python项目案例开发从入门到实战：爬虫、游戏和机器学习》 — 郑秋生、夏敏捷",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我们自有系统的扫码登录，脚本一直回报登录失败，可其实同事手机还没点确认呢。",
+      "expected_skill": "qr-poll-session",
+      "rationale": "把 pending 当 failed 的三态建模错误；中间态必须各自有独立分支。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "扫码那一步过了，紧接着调业务接口一直 401，是不是登录换来的令牌没带全、或者每次都被重新生成？",
+      "expected_skill": "qr-poll-session",
+      "rationale": "凭据固定信封：票据 + 首次生成的设备标识原样携带，每次重生就会'登录成功但下一个接口 401'。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "每调试一次就得重新扫一次码，能不能把登录状态存下来，过期了再重新扫（自有系统）。",
+      "expected_skill": "qr-poll-session",
+      "rationale": "凭据落盘 + 唯一重登入口；不是每轮都重扫。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我要做个常驻程序盯着订单，怎么区分'这会儿确实没新单'和'登录已经掉了'？",
+      "expected_skill": "qr-poll-session",
+      "rationale": "探活与取数拆成两个请求，退出用状态码而不是异常或超时。"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "发消息失败以后重试，会不会同一条被发出去两遍？",
+      "expected_skill": "qr-poll-session",
+      "rationale": "写接口幂等键（时间戳+随机数）+ 单条有限重发，不整队重试。"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "My QR login polling loop treats 'not confirmed yet' as a failure. How should the states be modeled?",
+      "expected_skill": "qr-poll-session",
+      "rationale": "英文正面场景：pending/scanned/expired/confirmed 显式建模，pending 不能合并进失败分支。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "没有文档的老系统，一堆请求要按业务顺序串起来，哪一步的返回值给下一步？",
+      "expected_skill": "api-table-replication",
+      "rationale": "同书兄弟诱饵：这是多接口时序表法，不是单条会话的状态机与票据纪律。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "网页表单登录，提交完没报错可还停在登录页，隐藏字段每次都不一样。",
+      "expected_skill": "form-hidden-state-and-readback",
+      "rationale": "跨书诱饵：单次表单的一次性隐藏字段与写后回读，是本 skill 明确排除的同步事务。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "登录到底是用 FormRequest 还是直接塞 Cookie，这两条路线我拿不准。",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "跨书诱饵：这是登录路线的选择，路线定了才谈扫码/轮询的状态机。"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "多账号 cookie 轮着用，长跑任务结果全空，还老是 302 跳到登录页。",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "跨书诱饵：Cookie 池与登录态失效自愈，不是单会话的三态与票据信封。"
+    },
+    {
+      "id": "should-not-trigger-05",
+      "type": "should_not_trigger",
+      "prompt": "登录的时候弹滑块，我在纠结是自己写识别还是接打码平台。",
+      "expected_skill": "captcha-cost-routing",
+      "rationale": "跨书诱饵：验证码成本分路，本 skill 不处理人机验证也不提供绕过。"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我们这个'扫码'其实就是网页表单提交一次就完事，没有等人确认那一步，还要套这套骨架吗？",
+      "expected_skill": "http-request-replication",
+      "rationale": "边界：没有多轮等待、没有换票，就是一次性请求复现；关键判据是'是否存在中间态等待'。"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "令牌过期以后每次调用都 401，我干脆每次请求前都重新扫一次码，这样行不行？",
+      "expected_skill": "qr-poll-session",
+      "rationale": "边界：应保留唯一重登入口，而不是每轮重扫；关键判据是'过期后是否只有一条重登路径'。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条应调用覆盖 A2 五类（中间态、401 信封、落盘、探活分离、幂等）；5 条诱饵含同书 api-table 与跨书 form/scrapy-login/cookie-pool/captcha；2 条边界卡'是否多轮等待'与'重登入口唯一'。"
+}

@@ -1,0 +1,93 @@
+{
+  "skill": "api-table-replication",
+  "version": "0.1.0",
+  "source_book": "《Python项目案例开发从入门到实战：爬虫、游戏和机器学习》 — 郑秋生、夏敏捷",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我们单位内网有个老系统，只有网页能点，没有任何接口文档，领导要每天自动把我的待办导出来（自有系统、已授权）。",
+      "expected_skill": "api-table-replication",
+      "rationale": "无文档、多步有状态流程的典型入口：先排成本档，再建表并按业务顺序串行。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "这个平台只有网页版能用，我是该自己抓协议，还是找别的办法？",
+      "expected_skill": "api-table-replication",
+      "rationale": "成本三档判断：官方出口 → 封装库 → 抓包复刻，复刻排最后。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "已经有人写了现成的库能调这个服务了，我还有必要自己抓一遍包重写吗？",
+      "expected_skill": "api-table-replication",
+      "rationale": "第二档：有可维护的封装库/SDK 时，复刻协议是负收益，同时要记录库依赖哪条通道。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "抓包看到一串请求，我照着一条条写 requests，登录那步过了，后面接口全是 401、列表还是空的。",
+      "expected_skill": "api-table-replication",
+      "rationale": "多步时序里动态参数没标来源、没按顺序串；要用五行表 + 静态/动态参数分离 + 逐行重放验收门。"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "怎么判断哪个请求返回的东西要喂给下一个请求，哪个值是第一次生成以后就固定的？",
+      "expected_skill": "api-table-replication",
+      "rationale": "静态参数 vs 运行时动态参数分类，并注明动态值来自哪一行的哪个字段。"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "Internal system, web UI only, no API docs. I need a daily automated export — where do I even start?",
+      "expected_skill": "api-table-replication",
+      "rationale": "英文正面场景：无文档系统的接入，先做成本排序再决定是否复刻。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我们自有系统扫码登录，脚本要一直问后台'手机点了确认没有'，中间那几个状态怎么分？",
+      "expected_skill": "qr-poll-session",
+      "rationale": "同书兄弟诱饵：这是轮询式会话的三态建模，不是多接口的表法编排。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "接口已经调通了，就是翻页时条数对不上，十页看起来都像第一页。",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "同书兄弟诱饵：单条已通，只剩多轮推进的验收，不是建表。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "浏览器里复制出来的那条请求，重放就 401，请求头和 cookie 怎么都对不上。",
+      "expected_skill": "http-request-replication",
+      "rationale": "跨书诱饵：单条请求重放不出来，先解决这一条，不进入多行台账。"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "页面在浏览器里数据都在，脚本拿到空壳，我只想复用页面自己发的那条取数请求。",
+      "expected_skill": "page-owned-api-recon",
+      "rationale": "跨书诱饵：只找单页的数据通道，不涉及多步有状态的后续接口。"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "这个系统本身就有个'导出 Excel'按钮，我是不是可以直接用它，根本不用去抓接口？",
+      "expected_skill": "api-table-replication",
+      "rationale": "边界：这是成本第一档的判断题；有官方出口时直接采用并记录，复刻是最后手段。关键判据是'有没有官方出口'。"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "我就想把一个商品列表页的数据拿下来，一条请求就够了，没有登录也没有后续接口，也要先建一张表吗？",
+      "expected_skill": "page-owned-api-recon",
+      "rationale": "边界：单页单请求、无跨接口票据传递，表法没有增量。关键判据是'是否多步有状态流程'。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条应调用覆盖 A2 五类（无文档、成本档、封装库、串不起来、静态/动态参数）；4 条诱饵含同书 qr-poll/pagination 与跨书 http/page-owned；2 条边界卡'官方出口'与'单请求 vs 多步'。"
+}

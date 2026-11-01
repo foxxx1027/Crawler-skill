@@ -1,0 +1,52 @@
+{
+  "skill": "capture-failure-triage",
+  "version": "0.1.0",
+  "source_book": "《爬虫逆向进阶实战》 — 李玺",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "手机上系统代理设好了、证书也装进系统了，App 刷内容完全正常，可 Charles 里一条请求都没有，Wireshark 里倒全是 UDP 443 的流量",
+      "expected_behavior": "应激活 capture-failure-triage，把现象判为「不走代理 + 协议被换成 QUIC/UDP443」，先用第二通道定性，再走协议降级（Hook 关掉开关）或用 postern/drony 强制转发",
+      "notes": "正面场景：抓包工具空、第二通道有流量，正是通道分诊的典型形态"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "抓包软件一开，App 首页就报网络错误拿不到数据，关掉抓包就一切正常；换一台 iOS 也一样",
+      "expected_behavior": "应激活 capture-failure-triage，判为单向证书锁定（SSL pinning），走校验证书的绕过方向，而不是继续折腾证书安装",
+      "notes": "正面场景：有请求但拿不到数据，指向客户端只信任内置证书"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "开抓包工具后接口直接回 No required SSL certificate was sent",
+      "expected_behavior": "应激活 capture-failure-triage，判为双向认证，去 assets/res 按 client、p12、bks、crt 等关键词找客户端证书并导入抓包工具，找不到就保留换方式的退路",
+      "notes": "正面场景：报错文本本身即通道结论，解法与 pinning 相反"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "Charles 里 Map Local 和 Rewrite 有什么区别，分别怎么设置",
+      "expected_behavior": "不应激活本 skill，这是抓包工具的纯功能查询，没有「抓不到包」的失败现象",
+      "notes": "诱饵：纯工具用法问题，不涉及通道分诊"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "包已经全部抓到了，就是请求体里那个 sign 每次都不一样，我想搞清楚它是怎么算出来的",
+      "expected_behavior": "不应激活 capture-failure-triage，应激活 js-param-locate-ladder，因为包已可见、问题在参数生成",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：通道已通，直接进入参数定位"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "用系统代理抓某小程序，首页列表的请求都能看到，但点进商品详情页后抓包工具里再没有新请求，页面数据却正常显示",
+      "expected_behavior": "可以激活 capture-failure-triage：这仍属通道分诊（详情页可能走长连接、独立通道或协议降级），按「部分通道不可见」先定通道；但若详情页请求其实已抓到、只是字段被加密，则应转 js-param-locate-ladder",
+      "notes": "边界：部分请求缺失 vs 字段被加密，两者现象接近但走不同 skill"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

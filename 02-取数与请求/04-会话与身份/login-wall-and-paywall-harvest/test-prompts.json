@@ -1,0 +1,43 @@
+{
+  "skill": "login-wall-and-paywall-harvest",
+  "version": "0.1.0",
+  "source_book": "实战经验沉淀（账号池与内容解锁）",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "lwp-01",
+      "type": "should_trigger",
+      "prompt": "文章要登录才能看全文，匿名只给前两段，怎么批量拿全文？",
+      "expected_behavior": "激活本 skill，先测墙高（JSON 内容协商 / preview 参数 / XHR 头），墙确实高再上账号池 + StorageState 复用。",
+      "notes": "典型触发：登录墙。"
+    },
+    {
+      "id": "lwp-02",
+      "type": "should_trigger",
+      "prompt": "登录有个滑块，直接拖过不去，通过率很低。",
+      "expected_behavior": "激活本 skill，给滑块轨迹合成（加速—抖动—回拉—归位）与 Playwright 分步触发实现。",
+      "notes": "验证码层。"
+    },
+    {
+      "id": "lwp-03",
+      "type": "should_trigger",
+      "prompt": "注册要手机验证码，账号池每天都被踢，怎么自动恢复？",
+      "expected_behavior": "激活本 skill，给接码平台取号/轮询/释放流程 + 会话失效检测（302/401/文案）与自动重登。",
+      "notes": "短信墙 + 会话恢复。"
+    },
+    {
+      "id": "lwp-04",
+      "type": "should_not_trigger",
+      "prompt": "这个站的 JWT 能改 alg 绕过鉴权吗？",
+      "expected_behavior": "不激活本 skill，转 auth-session-and-federation-security。",
+      "notes": "跨 skill 混淆：认证机制缺陷而非正常登录取内容。"
+    },
+    {
+      "id": "lwp-05",
+      "type": "ambiguous",
+      "prompt": "付费墙后面的内容能拿到吗？",
+      "expected_behavior": "激活本 skill，先判墙型（登录 / 付费 / 验证码），再给对应路径与成本估计。",
+      "notes": "边界模糊。"
+    }
+  ]
+}

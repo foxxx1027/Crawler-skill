@@ -1,0 +1,127 @@
+{
+  "skill": "scrapy-login-route-choice",
+  "version": "0.1.0",
+  "source_book": "《Scrapy网络爬虫实战》 — 东郭大猫",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "这个站得登录才看得到数据，我该把账号密码发过去，还是把浏览器里那份现成的凭证拿来用？",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "两条路线的取舍，是登录技能的核心问题",
+      "expected_behavior": "先做真实接口/字段名/成功判据三步定位，再按复现加密成本 × 账号数 对比 一次性收集 + TTL 维护成本选路",
+      "notes": "正面场景：路线拿不准（自有系统/已授权）"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我在登录页点确定，开发者工具里冒出好几条请求，我该拿哪一条来抄？",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "定位真实提交接口，是选路前必须完成的三步之一",
+      "expected_behavior": "在 Network 里筛出提交账号密码的那条，记录 URL、method 与字段名",
+      "notes": "正面场景：找不到真实接口"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "密码框里填的值，在请求里完全不是明文，像是被处理过，这种还值不值得硬做？",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "复现加密成本过高时，应转凭证复用路线",
+      "expected_behavior": "评估加密复现成本；若无法低成本复现则转凭证路线，并说明 TTL 债",
+      "notes": "正面场景：加密重，成本判断"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我照着页面上输入框的名字写了请求，返回 200，可进去还是没登录",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "提交成功判据缺失，常见于字段或提交路径不对",
+      "expected_behavior": "核对字段是否齐全、提交路径是否被脚本接管，并用仅登录可见页做对照验证",
+      "notes": "正面场景：提交了但没登录"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "那个确定按钮不是普通表单按钮，点完好像还有脚本在跑，我直接发请求会不会少东西？",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "JS 接管的表单不能沿用默认点击语义",
+      "expected_behavior": "改为不模拟点击、只填可见字段，或直接转凭证路线；用响应判据验证",
+      "notes": "正面场景：表单由 JS 接管"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "I need to know which address the form posts to, which fields are required, and what response counts as success before I pick an approach.",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "英文版同义：三步定位先于选路",
+      "expected_behavior": "从一次成功登录的请求快照取接口/字段/成功判据，再选路线",
+      "notes": "正面场景（英文，已授权目标）"
+    },
+    {
+      "id": "should-trigger-07",
+      "type": "should_trigger",
+      "prompt": "登录成功了，可后面每个页面还是显示成没登录的样子；我该继续跟这个表单死磕，还是干脆换个思路？",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "登录成功判据与实际会话状态不一致，需在两条路线间重新决策",
+      "expected_behavior": "先用仅登录可见页验证会话；确认表单路径缺字段则修路径，成本过高则转凭证路线",
+      "notes": "正面场景：表面成功实际未登录"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "凭证过期后半夜全空，五个账号怎么轮着用才不浪费",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "已选凭证路线，进入运行期池化与自愈",
+      "expected_behavior": "不激活本 skill；按主键池化、响应侧检测、换新重排",
+      "notes": "同书兄弟诱饵：多账号池化"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "列表一半字段、详情一半字段，怎么拼成完整一条",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "跨页字段组装，与登录身份无关",
+      "expected_behavior": "不激活本 skill；meta 逐跳补字段并在末跳断言",
+      "notes": "同书兄弟诱饵：多页组装"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "表单里有个每次都不一样的一次性字段，我写死之后第二天就失败，写入后也不知道成没成",
+      "expected_skill": "form-hidden-state-and-readback",
+      "rationale": "一次性 token 的读取、回填与回读断言，是表单状态技能",
+      "expected_behavior": "不激活本 skill；从当次响应遍历读取字段，写后回读断言",
+      "notes": "跨书诱饵：隐藏字段与回读"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "I copied the headers and body of that one request from the capture, but replaying it gives the wrong result.",
+      "expected_skill": "http-request-replication",
+      "rationale": "单次请求的忠实重放，不是登录路线选择",
+      "expected_behavior": "不激活本 skill；逐字段比对快照，处理会话与编码",
+      "notes": "跨书诱饵（英文）：请求复现"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "登录要过滑块，这个也能自动化吗？",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "需绕过人机验证，超出登录路线选择范围",
+      "expected_behavior": "不提供自动化方案；说明这是本 skill 的排除区，转人工接管或 captcha-cost-routing 做成本判断",
+      "notes": "边界：判据是登录是否需要绕过验证码/MFA"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "只有一个账号、密码是明文，需要那么复杂的成本模型吗？",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "简单场景仍属选路，但结论直接落到表单路线，不必做完整成本模型",
+      "expected_behavior": "选表单路线；用 from_response 只填账号密码，隐藏字段由当次响应补齐，仍要做成功判据",
+      "notes": "边界：判据是账号数与加密复杂度，不需要为单账号上池化"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "7 条应调用 / 4 条诱饵（2 条同书兄弟、2 条跨书，其中 1 条英文）/ 2 条边界模糊。"
+}

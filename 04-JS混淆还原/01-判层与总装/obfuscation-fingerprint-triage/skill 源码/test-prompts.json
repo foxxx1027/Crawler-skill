@@ -1,0 +1,109 @@
+{
+  "skill": "obfuscation-fingerprint-triage",
+  "version": "0.1.0",
+  "source_book": "《反爬虫AST原理与还原混淆实战》 — 李岳阳、卓斌",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我把自有站点的一个 js 存下来打开（已授权测试环境），第一行就是一个特别长的数组，后面满屏都是下划线开头的怪名字，这文件到底动了哪些手脚？（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "激活本 skill，按七条结构化指纹逐条核对，输出层清单与可跳过步骤",
+      "rationale": "看样本先判'用了哪几层'，是本 skill 的核心场景",
+      "notes": "A2 情境 1：首行大数组 + 下划线名"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "文件里有个永远为真的死循环套着一大堆 case；先别动手，我想知道这是不是所谓控制流平坦化、值不值得为它单独花时间还原。（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "激活本 skill，先判是否命中'循环+分派'这条指纹，再决定是否值得进入重排；不直接动手改控制流",
+      "rationale": "用户问的是'这是什么手法'，判层先于还原",
+      "notes": "A2 情境 2：死循环 switch"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "代码里有把函数转成字符串再拿正则去比的写法，还有一个不停往数组里塞随机数的循环，这是防什么的？要不要先处理掉？（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "激活本 skill，识别自检与内存爆破指纹，给出'先摘检测'的动作与跳过清单",
+      "rationale": "执行期对抗指认属于判层与取舍，不是执行还原",
+      "notes": "A2 情境 3：自检/内存爆破"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "响应里有个很长的随机串，我不确定它是真的密码学加密，还是只是换了个写法的拼接；想先定性再决定要不要为它啃算法。（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "激活本 skill，用'还原后有无密码学运算 + 服务端校验方式'判据，把'解密'可能降级为'拼接'",
+      "rationale": "判'加密还是混淆'并据此决定投入，是本 skill 的定性动作",
+      "notes": "A2 情境 4：加密还是混淆"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "leader 问我这套东西要多久能弄明白，我不想拍脑袋，能不能先给我个量级和'哪几步可以不做'？（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "激活本 skill，按层与造拆对称性给出投入量级，并输出可跳过步骤清单",
+      "rationale": "要量级与工作量估计，是本 skill 的产出之一",
+      "notes": "英文词 leader 混用，语义仍是'估投入'"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "I opened the minified bundle from our staging site. First line is a huge array, everything else is single-letter or underscore names. What layers am I actually dealing with, and how long would a full restore take?（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "激活本 skill，逐条对指纹并给出层清单与投入量级",
+      "rationale": "英文表述的判层+估成本场景",
+      "notes": "英文场景，对应 A2 情境 1+5"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "开头那个大数组我已经认出来了，现在想把里面存的原文全部解出来，再逐处把调用换掉。（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "不应激活本 skill；应激活 string-pool-decrypt-revive（已确认字符串池，进入执行）",
+      "rationale": "判层已结束，用户要的是解池执行",
+      "notes": "同书兄弟诱饵：判层 vs 解池执行"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我已经决定要还原了，现在纠结字符串、花指令、平坦化、改名到底谁先谁后，全部做完又该怎么证明它是对的？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "不应激活本 skill；应激活 ast-restore-pipeline-acceptance（段序与验收）",
+      "rationale": "已过'值不值得还原'，进入顺序与验收",
+      "notes": "同书兄弟诱饵：判层 vs 流水线"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "我只有三天时间，这套逆向到底值不值得投人，是自己啃还是花钱找人做？（自有系统/已授权环境）",
+      "expected_skill": "reverse-cost-ladder",
+      "expected_behavior": "不应激活本 skill；应激活 reverse-cost-ladder（整体投入与分级退出）",
+      "rationale": "问的是整套逆向要不要做，而非这份文件用了哪几层",
+      "notes": "跨书诱饵：整体成本决策 vs 单文件判层"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "这个文件肯定被动过手脚，我想知道它大概有几种手段、是不是每种都值得还原，别一上来就从第一行啃。（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "激活本 skill：关键判据是'有几种手段 + 哪些可跳过'，仍是判层动作；若换成'整条业务线要不要投、先做哪一级'才转 reverse-cost-ladder",
+      "rationale": "边界在单文件判层与全局成本决策之间，出现'几种手段/值不值得还原'即归本 skill",
+      "notes": "边界：与 reverse-cost-ladder 的重叠"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "The parameter is very long and a colleague says it may be encrypted. If it is just a different encoding I will decode it myself, but if it is layers of obfuscation I need a plan. Help me tell which it is first.（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "激活本 skill：关键判据是'先分成加密/编码/混淆'，这一步是定性；已判为编码要解才轮到 constant-fold-and-decoding",
+      "rationale": "边界：定性分诊与常量解码重叠，'先分清'决定归本 skill",
+      "notes": "边界：与 constant-fold-and-decoding 的重叠"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条 should_trigger（覆盖 A2 五类情境 + 1 英文）、3 条 should_not_trigger（2 同书 + 1 跨书）、2 条 edge_case（1 中文 1 英文）。 全部用例限定自有系统/已授权环境。"
+}

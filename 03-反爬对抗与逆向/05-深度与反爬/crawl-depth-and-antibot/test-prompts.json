@@ -1,0 +1,43 @@
+{
+  "skill": "crawl-depth-and-antibot",
+  "version": "0.1.0",
+  "source_book": "实战经验沉淀（大规模采集链路）",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "cda-01",
+      "type": "should_trigger",
+      "prompt": "页面看着有内容，curl 下来源码里全是空的 div，怎么抓？",
+      "expected_behavior": "激活本 skill，判为 L2 渲染层，先找 XHR/JSON 接口，拿不到再上无头渲染 + 滚动触发懒加载。",
+      "notes": "典型触发：渲染层。"
+    },
+    {
+      "id": "cda-02",
+      "type": "should_trigger",
+      "prompt": "抓到第 200 页开始全部 403，响应头有 cf-ray，怎么办？",
+      "expected_behavior": "激活本 skill，判 Cloudflare 族系，按 归档/文本代理 → 源站直连 → 指纹伪装 → 出口轮换 顺序绕行，不先调并发。",
+      "notes": "反爬绕行顺序。"
+    },
+    {
+      "id": "cda-03",
+      "type": "should_trigger",
+      "prompt": "接口列表只在前端 bundle 里，怎么把隐藏 API 挖出来？",
+      "expected_behavior": "激活本 skill，走 JS bundle 路径提取 + sourcemap + GraphQL introspection + 常见前缀探测。",
+      "notes": "端点挖掘。"
+    },
+    {
+      "id": "cda-04",
+      "type": "should_not_trigger",
+      "prompt": "会员内容要登录才能看，账号怎么批量管？",
+      "expected_behavior": "不激活本 skill，转 login-wall-and-paywall-harvest。",
+      "notes": "跨 skill 混淆：同书兄弟 skill 的身份层。"
+    },
+    {
+      "id": "cda-05",
+      "type": "ambiguous",
+      "prompt": "这个站爬不动了，说不上是封了还是本来就没东西。",
+      "expected_behavior": "激活本 skill，先判层（L1 发现 / L2 渲染 / L3 协议 / L4 身份），再定手段。",
+      "notes": "边界模糊：先判层。"
+    }
+  ]
+}

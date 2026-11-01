@@ -1,0 +1,118 @@
+{
+  "skill": "scope-safe-rename",
+  "version": "0.1.0",
+  "source_book": "《反爬虫AST原理与还原混淆实战》 — 李岳阳、卓斌",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "满屏都是下划线开头的怪名字，我想换成 a、b、c 或者有点意义的名字，怎么批量改才安全？（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "激活本 skill，用 getOwnBinding + binding.scope 过滤归属，scope.rename 批量改，改完重 parse",
+      "rationale": "批量改标识符且担心安全，是本 skill 的主场景",
+      "notes": "A2 情境 1：改可读名"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "改名脚本跑完，运行时说某个名字没定义，可我明明在文件里看到它声明了。（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "激活本 skill，判定为绑定断裂（改到了不属于当前函数的 binding），用 scope/path 排查归属",
+      "rationale": "not defined 是改名绑定断裂的响铃失败",
+      "notes": "A2 情境 2：not defined"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "改完名字程序还能跑，但算出来的结果和以前不一样，而且没有任何报错。（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "激活本 skill，判为局部遮蔽全局或漏改引用，打印 binding.scope 与最近函数父节点排查",
+      "rationale": "改名后静默值偏，是本 skill 的第二种失败形态",
+      "notes": "A2 情境 3：能跑值偏"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我给外层函数改名以后，里面那个小函数的参数也跟着变了，小函数里就报错了。（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "激活本 skill，说明 getOwnBinding 会带出子函数绑定，必须比较 binding.scope 过滤",
+      "rationale": "子函数绑定被父函数改名波及，是本 skill 的典型坑",
+      "notes": "A2 情境 4：子函数被波及"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "我改完名字之后，原来靠某个字符串属性去搜的线索全断了，再也找不回来。（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "激活本 skill，确认改名顺序违规（必须最后改名），回退并从备份重做",
+      "rationale": "改名破坏按属性键搜索的线索，是本 skill 的硬顺序",
+      "notes": "A2 情境 5：搜索链断"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "I renamed the outer function's variables and now the inner function's parameters got changed too, so its references are broken. How do I scope the rename properly?（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "激活本 skill，按 binding.scope 归属过滤，只改当前函数自己的绑定",
+      "rationale": "英文表述的作用域改名失败",
+      "notes": "英文场景，对应 A2 情境 4"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我把代码搬到 Node 跑，报 window is not defined，补了 navigator 之后还是被认出来。（自有系统/已授权环境）",
+      "expected_skill": "js-env-patch-loop",
+      "expected_behavior": "不应激活本 skill；应激活 js-env-patch-loop（运行期补环境）",
+      "rationale": "环境缺失与伪装，不是编译期绑定问题",
+      "notes": "跨书诱饵：环境 vs 作用域"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "字符串还是那套带编号的调用，我想先把名字改了省点事，回头再解字符串。（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "不应激活本 skill；应激活 string-pool-decrypt-revive，并纠正'先改名'的顺序错误",
+      "rationale": "用户意图是通过改名跳过解字符串，而顺序恰好相反",
+      "notes": "同书兄弟诱饵：顺序违规"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "变量名改完值偏了，我想确认是不是签名算法本身就没复现对。（自有系统/已授权环境）",
+      "expected_skill": "sign-reproduce-acceptance",
+      "expected_behavior": "不应激活本 skill；应激活 sign-reproduce-acceptance（值级验收与字段反证）",
+      "rationale": "用户要验算法，不是排查 binding",
+      "notes": "跨书诱饵：算法验收 vs 改名排查"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "我想把一层层对象属性取值折掉，改成直接的真值。（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "不应激活本 skill；应激活 junk-instruction-elimination（间接层折叠）",
+      "rationale": "诉求是折叠取值链，不是改标识符",
+      "notes": "同书兄弟诱饵：折叠 vs 改名"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "改名之后值不对，我分不清是改错了绑定，还是我补的运行环境不全。（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "激活本 skill：关键判据是'刚做过改名且无 window/document 报错'；若报的是 window/navigator 未定义才转 js-env-patch-loop",
+      "rationale": "边界：两种静默失败形态，判据是有无环境缺失报错",
+      "notes": "边界：与 js-env-patch-loop 的重叠"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "My new local name happens to match a global that the function references. Will the rename shadow it and change behavior?（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "激活本 skill：关键判据是'局部遮蔽全局'，需先收集自由名进 globalBindingObj 再生成不撞的新名",
+      "rationale": "边界：遮蔽问题属改名避撞，是第四个前置条件",
+      "notes": "英文边界用例"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条 should_trigger（覆盖 A2 五类情境 + 1 英文）、4 条 should_not_trigger（2 同书 + 2 跨书）、2 条 edge_case。 全部用例限定自有系统/已授权环境。"
+}

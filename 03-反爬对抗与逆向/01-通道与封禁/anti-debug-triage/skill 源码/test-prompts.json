@@ -1,0 +1,52 @@
+{
+  "skill": "anti-debug-triage",
+  "version": "0.1.0",
+  "source_book": "《爬虫逆向进阶实战》 — 李玺",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "页面一按 F12 就无限 debugger，点「停用此处断点」过两秒又断，格式化代码后浏览器直接卡死",
+      "expected_behavior": "应激活 anti-debug-triage，先把现象翻译成具体信号（静态 debugger／定时器轮询／控制台状态检测），再按侵入性从低到高给手段（条件断点→禁断→本地改写 JS→注入重写定时任务）",
+      "notes": "正面场景：无限断点与控制台检测"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "Selenium 一跑就被识别，页面直接返回空列表；换了隐身版驱动还是被挡",
+      "expected_behavior": "应激活 anti-debug-triage，先确认对方查的是哪个自动化属性（如 navigator.webdriver），按版本博弈逐招替换（启动参数→页面加载前覆盖属性→启动配置→换浏览器/驱动），并说明没有一次配置永久有效",
+      "notes": "正面场景：自动化被识别（webdriver 检测）"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Frida 一 attach 进程 App 就自己退出，报找不到进程",
+      "expected_behavior": "应激活 anti-debug-triage，把现象归因到进程名／调试端口／注入框架特征这几类具体信号，按侵入性排序给方案，并坚持一次只动一个信号",
+      "notes": "正面场景：attach 即退出"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "Chrome DevTools 里「停用此处断点」的快捷键是什么，条件断点又在哪设置",
+      "expected_behavior": "不应激活本 skill，这是纯 IDE 操作查询，没有「被对方检测」的对抗语境",
+      "notes": "诱饵：纯工具用法"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "每次搜索都弹滑块，我在纠结接打码平台还是把验证接口复刻出来",
+      "expected_behavior": "不应激活本 skill，应激活 captcha-cost-routing，这是人机验证的成本分路",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：都是「过不去」，但一类是检测对抗、一类是验证码成本"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "抓包工具里一条请求都没有，但 App 用起来完全正常",
+      "expected_behavior": "不应激活 anti-debug-triage：没有任何「调试被检测」的信号，这是通道问题，应走 capture-failure-triage",
+      "notes": "边界：调试不动 vs 抓不到包，现象都像「看不到东西」"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

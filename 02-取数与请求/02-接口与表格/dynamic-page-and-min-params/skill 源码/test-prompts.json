@@ -1,0 +1,93 @@
+{
+  "skill": "dynamic-page-and-min-params",
+  "version": "0.1.0",
+  "source_book": "《Python项目案例开发从入门到实战：爬虫、游戏和机器学习》 — 郑秋生、夏敏捷",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我把网页存下来全文搜了一遍，想找的商品图链接一个都没有，可浏览器里往下拉还有一大片，我第一反应是不是被网站拒绝了？",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "先分'取数路线走错'还是'被拦'的误诊；三条行为判据（源码搜不到 + 滚动仍出新）指向数据由 JS 异步取回，不是封禁。"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "浏览器里不停往下滚会不断冒出新商品，可我的 requests 只拿到开头二十个，后面就没了。",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "滚动继续出新而脚本只拿首屏，是判动态档的核心行为证据；先判档再找那条异步取数请求。"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "同一条接口我在浏览器里点着好好的，复制进脚本就 403，UA 和 Referer 都加过了还是不行，会不会是我多带了什么不该带的参数？",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "403 排序：先怀疑参数集合多带，删一个重放一次，而不是直接换身份/换 IP。"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "接口现在能通了，但地址后面挂了十几个参数，我不知道哪些能砍掉，也分不清哪个是控制翻到下一批的。",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "最小参数集工序：逐个删、重放、结构不变才删，并标出控制分页的参数。"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "这个页面在源文件里能搜到前十来条数据，再往下就没了，那它到底算不算静态站，我还要不要费劲去抓接口？",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "混合档判据：前段静态注入、后续异步加载很常见，判档必须带上'我要多少条'这个前提。"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "My script only gets the first batch while the browser keeps loading more as I scroll. Is the data not in the HTML at all, or is the site blocking me?",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "英文正面场景：先用行为判档区分'数据不在首屏 HTML'与'被封'，再转异步取数请求。"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "循环跑了三十页，日志打了三十行，可最后导出的记录量跟只抓一页差不多。",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "同书兄弟诱饵：这是'页与页之间有没有真的换'的条数对账问题，不是判档或删参数。"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我只想知道这个站的数据到底该怎么取，是先找接口还是直接上 Selenium，帮我排个先后顺序。",
+      "expected_skill": "data-path-cost-ladder",
+      "rationale": "跨书诱饵：用户要的是整条成本路径的选档，本 skill 只负责判档之后的那道工序。"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "不管换网络换 UA，同一个地址浏览器里 200、脚本里 403，我是不是被风控盯上了？",
+      "expected_skill": "anti-bot-triage-and-human-parity",
+      "rationale": "跨书诱饵：已确认被拦的信号（换网络仍失败），应进入反爬分层诊断，而不是继续猜参数。"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "页面在浏览器里数据都在，我的脚本拿到的是个空壳，我想直接复用页面自己发的那条取数请求。",
+      "expected_skill": "page-owned-api-recon",
+      "rationale": "跨书诱饵：目标是找到并归档页面自用的那条接口，不涉及判档与参数最小化。"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "源文件里能看到前十条，可我要的是全部两千条，这站到底算静态站还是动态站？",
+      "expected_skill": "dynamic-page-and-min-params",
+      "rationale": "边界：源码能搜到不等于静态档，判据是'需要的条数'；两千条超出静态段，应判混合/动态档。关键判据是'源码搜到的条数是否覆盖需求总量'。"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "源码里数据明明白白就在，就是我 find_all 拿不到，是不是该换解析库了？",
+      "expected_skill": "semantic-selector-robustness",
+      "rationale": "边界：数据确实在静态 HTML 里，这是选择器写法问题，不该判成动态页；关键判据是'源码能否搜到目标数据'。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条应调用覆盖 A2 五类情境；4 条诱饵含同书 pagination、跨书 data-path/anti-bot/page-owned；2 条边界卡'源码能搜到≠静态档'。"
+}

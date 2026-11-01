@@ -1,0 +1,52 @@
+{
+  "skill": "form-hidden-state-and-readback",
+  "version": "0.1.0",
+  "source_book": "《用 Python 写网络爬虫（第2版）》 — Katharine Jarmul / Richard Lawson",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "登录表单提交完，response.url 还是登录页，可状态码是 200，一点报错都没有，我完全看不出哪错了。",
+      "expected_behavior": "应激活 form-hidden-state-and-readback，指出“200 + 跳回登录页”是状态缺失而非网络问题，按顺序诊断：先查可见字段 → 再查隐藏域（_formkey/CSRF）→ 最后查是否带上了同一次 GET 的 cookie jar。",
+      "notes": "正面场景：没报错但页面没变，description 的第一句话"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "用 Selenium 填完表单点了保存，页面没报错，但我怎么确认这条数据真的写进去了？",
+      "expected_behavior": "应激活 form-hidden-state-and-readback，给出写后回读：重新读取刚写入的值并断言等于期望值，或用页面特征（导航栏文本）判定登录/写入状态；读 input 必须取属性 value，用 text 永远拿不到。",
+      "notes": "正面场景：确认写操作真的写入，description 明写"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "登录表单里有个隐藏字段，每次刷新页面值都不一样。我图省事把它写死成上一次的值，结果就再也登录不进去了。",
+      "expected_behavior": "应激活 form-hidden-state-and-readback，解释一次性隐藏 token 每次加载都换新值、不能用旧值复用，正确顺序是先 GET 原表单页 → 遍历所有 input 的 name/value（读字段而非背字段）→ 把字段与这次 cookie 一起 POST。",
+      "notes": "正面场景：隐藏字段每次不同，description 明写"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我要复现浏览器里的一次请求，方法、URL、请求头、cookie、正文这四件套已经抄下来了，只想问归档成什么格式最方便别人重放。",
+      "expected_behavior": "不应激活 form-hidden-state-and-readback，因为这里没有一次性 token 与会话回读问题，应激活 http-request-replication 按四件套归档并校验格式。",
+      "notes": "跨 skill 混淆诱饵：LINKS 点名 http-request-replication 与 form-hidden-state 对照，二者都围绕“请求/表单”抢调用"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Vue 里 v-model 的双向绑定大概是怎么实现的？",
+      "expected_behavior": "不应激活本 skill，因为这是前端框架的纯信息查询，没有登录/提交流程要诊断。",
+      "notes": "诱饵：纯信息查询/其他领域，避免“表单”字面联想误激活"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "一个普通搜索表单，没有登录、没有 token，只提交两个查询条件。要不要按“先 GET 再 POST 带 cookie”那套流程做？",
+      "expected_behavior": "不应激活 form-hidden-state-and-readback 的双层状态流程（description 已排除无状态只读抓取）：无隐藏 token 时直接按 http-request-replication 复现一次 GET/POST 即可；只有当实测发现页面每次下发不同的隐藏域或提交后跳回首页时，再回来按 token + cookie jar 诊断。",
+      "notes": "边界：形式是表单提交，但缺少一次性状态这个必要特征"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

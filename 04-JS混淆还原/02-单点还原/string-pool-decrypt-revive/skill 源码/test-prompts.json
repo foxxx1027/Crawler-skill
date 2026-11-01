@@ -1,0 +1,118 @@
+{
+  "skill": "string-pool-decrypt-revive",
+  "version": "0.1.0",
+  "source_book": "《反爬虫AST原理与还原混淆实战》 — 李岳阳、卓斌",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "自有站点导出的脚本，最前面是一大坨字符串数组，紧接着一个自己执行的函数在挪动它们的顺序，我想把全文那些短名字调用都换成真正的文字。（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "激活本 skill，按'大数组+乱序函数+解密函数'三段确认形状，入空 AST、compact 生成、沙箱 eval",
+      "rationale": "三段齐备且目标就是换回明文，正是解池场景",
+      "notes": "A2 情境 1：大数组 + 乱序自执行"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "代码里到处都是 obj('0x1f') 这种带编号的调用，我想一次性换成原文，怎么弄才不会漏、也不会改坏？（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "激活本 skill，按 referencePaths 只替换父节点为 CallExpression 的引用，属性引用跳过",
+      "rationale": "批量替换调用点为明文，需要按引用类型过滤",
+      "notes": "A2 情境 2：索引调用换明文"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我批量替换之后，有几个地方变成了 undefined，还有些地方把那个解密函数自己的属性也跟着改了。（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "激活本 skill，判定为未按父节点类型过滤（属性引用被误替换），修过滤规则",
+      "rationale": "解池替换阶段特有的失败形态",
+      "notes": "A2 情境 3：替换后 undefined"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我在本地把它跑起来解字符串，进程内存一直往上涨，最后直接被系统杀掉。（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "激活本 skill，强制 compact 生成（触发格式化检测/内存爆破），并在隔离沙箱限时限内存执行",
+      "rationale": "eval 到 Node 内存溢出，是本 skill 的 compact 硬约束",
+      "notes": "A2 情境 4：OOM"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "这个文件最前面还有 'use strict' 和几行注释，我还能照网上说的'把最前面三段删掉'吗？（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "激活本 skill，改为按形状记录三段路径再删除，不依赖固定下标",
+      "rationale": "布局前有额外语句，固定'删前三句'的脆弱点，属本 skill 的边界处理",
+      "notes": "A2 情境 5：布局不同还能否删三段"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "The bundle starts with a big string array, an IIFE that shuffles it, and a decoder function. I want every indexed lookup swapped back to plain text, without breaking the property reads of the decoder function itself.（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "激活本 skill，三段复活后按父节点类型过滤替换引用",
+      "rationale": "英文表述的整池替换场景",
+      "notes": "英文场景，对应 A2 情境 2"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我还没搞清这个文件被动了哪些手脚，先帮我判断有几种手段、哪几步可以跳过。（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "不应激活本 skill；应激活 obfuscation-fingerprint-triage（先判层）",
+      "rationale": "还没判出字符串池，本 skill 明确要求先指纹判别",
+      "notes": "同书兄弟诱饵：判层在解池之前"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "大数组我已经解完了，现在满屏都是对象属性一层层取值的写法，想把中间那层去掉。（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "不应激活本 skill；应激活 junk-instruction-elimination（对象间接层折叠）",
+      "rationale": "字符串池已完成，下一步是花指令剔除",
+      "notes": "同书兄弟诱饵：解池之后的下一段"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "代码里有一堆 425871^425977 这种算式和 \\u4e2d 转义，我想直接变回字面量或汉字。（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "不应激活本 skill；应激活 constant-fold-and-decoding（零散常量与编码）",
+      "rationale": "没有大数组+乱序+解密函数三段，只是零散常量",
+      "notes": "同书兄弟诱饵：整池 vs 零散常量"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "这个参数我复现出来了，但跟抓包对不上，想确认算法本身有没有写错。（自有系统/已授权环境）",
+      "expected_skill": "sign-reproduce-acceptance",
+      "expected_behavior": "不应激活本 skill；应激活 sign-reproduce-acceptance（复现值验收）",
+      "rationale": "用户诉求是值级验收，不是解池",
+      "notes": "跨书诱饵：整池还原 vs 单参数复现"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "文件开头有一大堆字符串，我不确定这算'整个池子'还是只是零散常量，要不要按整套复活流程走？（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "激活本 skill：关键判据是'是否有乱序自执行函数 + 解密函数'；三段齐才走复活，只有零散字面量则转 constant-fold-and-decoding",
+      "rationale": "边界：池与零散常量，判据是三段形状",
+      "notes": "边界：与 constant-fold-and-decoding 的分界"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "The strings are decrypted now, but the process keeps getting killed while I evaluate. Is that a string-pool problem or something later in the pipeline?（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "激活本 skill：关键判据是'OOM 发生在 eval 求值阶段'，属 compact 生成与格式化检测约束；若是改名/重排后 OOM 才转 ast-restore-pipeline-acceptance",
+      "rationale": "边界：OOM 归因，判据是发生阶段",
+      "notes": "英文边界用例"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条 should_trigger（覆盖 A2 五类情境 + 1 英文）、4 条 should_not_trigger（3 同书 + 1 跨书）、2 条 edge_case（1 中文 1 英文）。 全部用例限定自有系统/已授权环境。"
+}

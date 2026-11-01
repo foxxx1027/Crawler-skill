@@ -1,0 +1,118 @@
+{
+  "skill": "control-flow-flattening-restore",
+  "version": "0.1.0",
+  "source_book": "《反爬虫AST原理与还原混淆实战》 — 李岳阳、卓斌",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "文件最上面有一串用竖线隔开的数字，下面是个永远为真的循环套着 switch，每个分支末尾都在跳下一个，我想把顺序恢复成正常的从上往下。（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "激活本 skill，先取分发器置换表，再 findParent/getSibling 定位 while 与 cases，清 body 按表重排",
+      "rationale": "分发器 + 死循环 + switch 三件套齐备，是平坦化还原的标准入口",
+      "notes": "A2 情境 1：竖线串 + while(!![]) + switch"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "字符串我已经全解开了，代码能读懂了，但一段逻辑被拆成好几块，来回跳，根本不是它原来从上到下的样子。（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "激活本 skill，确认前置已完成，进入控制流重排而不是回去解字符串",
+      "rationale": "明文已可读、顺序仍乱，正是平坦化还原的时机",
+      "notes": "A2 情境 2：已解密但顺序错乱"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "同一个文件里有好几处这种死循环，还有套在里面的，我一次全改完顺序反而更乱了。（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "激活本 skill，改为每轮只处理一个并 path.stop，外层反复重跑收敛，不精确计数",
+      "rationale": "嵌套平坦化一次性全改导致互相覆盖，是本 skill 的收敛策略场景",
+      "notes": "A2 情境 3：嵌套/多处，一次全改更乱"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我想把执行顺序恢复成从上往下，可那串竖线数字不是直接写死的，是从一个对象里取出来再拆开的，我按字符串去找根本找不到。（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "激活本 skill，判定分发器被花指令包住，先回 junk-instruction-elimination 再取表（或按等价解析）",
+      "rationale": "分发器被包装，属本 skill 的前置判停条件",
+      "notes": "A2 情境 4：分发器被包住"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "分支里是用 return 结束的，不是跳到下一个，我就不知道那个死循环该怎么收尾、按什么条件退出。（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "激活本 skill，按'退出可能是 return 而非越界'的变体不变量处理，不套固定模板",
+      "rationale": "变体形态（return 退出）属本 skill 的变体分析",
+      "notes": "A2 情境 5：return 代替 continue"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "After decryption the code is readable, but the statements are chopped into switch cases under a while(true) loop. I need the original top-to-bottom order back.（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "激活本 skill，取分发器后按表重排 body",
+      "rationale": "英文表述的平坦化还原场景",
+      "notes": "英文场景，对应 A2 情境 1+2"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "那串分发用的数字是从一个对象属性里取出来的，外面还包了一层奇怪的函数，我是不是该先把这些包装去掉？（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "不应激活本 skill；应激活 junk-instruction-elimination（先剔花指令）",
+      "rationale": "用户自己已判出包装层挡在分发器前面，诉求是剔花",
+      "notes": "同书兄弟诱饵：前置花指令 vs 平坦化"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "字符串还是那种带编号的调用，我连每个分支里写的是什么都读不出来。（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "不应激活本 skill；应激活 string-pool-decrypt-revive（字符串未解密）",
+      "rationale": "前置字符串未解，本 skill 明确要求先解池",
+      "notes": "同书兄弟诱饵：前置顺序"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "这个 sign 我算出来的顺序看着没问题，但内容跟抓包差一位，我想知道哪些字段参与了。（自有系统/已授权环境）",
+      "expected_skill": "sign-reproduce-acceptance",
+      "expected_behavior": "不应激活本 skill；应激活 sign-reproduce-acceptance（字段集合反证）",
+      "rationale": "用户问的是参数值验收，不是控制流重排",
+      "notes": "跨书诱饵：值验收 vs 结构重排"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "我想先知道这个文件一共叠了几层，这种改顺序的手法算不算最贵的那一档。（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "不应激活本 skill；应激活 obfuscation-fingerprint-triage（判层与成本）",
+      "rationale": "只问层数与成本，不进入执行",
+      "notes": "同书兄弟诱饵：判层 vs 执行"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "代码块顺序乱，我分不清是流程被拆成状态机了，还是只是语句被逗号合成了一行。（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "激活本 skill：关键判据是'是否有 switch + 死循环 + 分发器'；只有逗号串联、没有分派结构则转 constant-fold-and-decoding",
+      "rationale": "边界：两种'顺序乱'的成因，判据是分派结构是否存在",
+      "notes": "边界：与 constant-fold-and-decoding 的重叠"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "I reordered the cases by the dispatcher and the flow looks right now, but the computed value is still wrong. Should I recheck the dispatcher table, or is something upstream still unfinished?（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "激活本 skill：关键判据是'顺序对而内容错'，先怀疑前置（字符串/花指令/常量）未完成，再查表；若前置都已做扎实才转 ast-restore-pipeline-acceptance 做 L1 归因",
+      "rationale": "边界：平坦化内部失败与全局归因，判据是'顺序对内容错'",
+      "notes": "英文边界用例"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条 should_trigger（覆盖 A2 五类情境 + 1 英文）、4 条 should_not_trigger（3 同书 + 1 跨书）、2 条 edge_case（1 中文 1 英文）。 全部用例限定自有系统/已授权环境。"
+}

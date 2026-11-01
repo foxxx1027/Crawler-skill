@@ -1,0 +1,76 @@
+{
+  "skill": "auth-session-and-federation-security",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "st-01",
+      "type": "should_trigger",
+      "prompt": "我们后台改完密码以后，旧手机还能继续登着，点了退出再抓包重放旧 Cookie 居然也能进，这种会话问题该从哪查？",
+      "expected_behavior": "调用 auth-session-and-federation-security；先核对登录、改密、注销时的会话轮换与服务端销毁，再检查超时和并发会话，最后用自有测试账号做注销后重放对照。",
+      "notes": "典型会话生命周期缺陷，改密不撤销、注销只清 Cookie。"
+    },
+    {
+      "id": "st-02",
+      "type": "should_trigger",
+      "prompt": "JWT 把 alg 改成 none 还能过，token 里 role 写成 admin 后端也认，另外过期时间好像没校验，想系统看看认证链路哪里有问题。",
+      "expected_behavior": "调用 auth-session-and-federation-security；按算法固定、验签、exp/aud/iss 校验、授权声明回源和令牌撤销逐项核查，并用自有令牌做授权内最小对照。",
+      "notes": "JWT 验签与声明信任问题，属于认证与会话范围。"
+    },
+    {
+      "id": "st-03",
+      "type": "should_trigger",
+      "prompt": "接了企业 SSO，OAuth 回调地址好像能改成别的域名，state 也没看到，PKCE 也没开，担心登录回调被人劫持。",
+      "expected_behavior": "调用 auth-session-and-federation-security；沿授权码流程核对 redirect_uri 精确匹配、state 绑定、PKCE、code 一次性、scope 与令牌受众。",
+      "notes": "OAuth/OIDC 信任链配置审查。"
+    },
+    {
+      "id": "st-04",
+      "type": "should_trigger",
+      "prompt": "登录前后 session id 完全没变，Cookie 只有 HttpOnly，没有 Secure 和 SameSite，SessionId 还出现在 URL 里，想按顺序排查。",
+      "expected_behavior": "调用 auth-session-and-federation-security；先判会话固定与登录轮换，再逐项核对 Cookie 的 HttpOnly/Secure/SameSite/Path/Domain 和会话 ID 传输位置。",
+      "notes": "会话固定叠加 Cookie 属性缺失。"
+    },
+    {
+      "id": "snt-01",
+      "type": "should_not_trigger",
+      "prompt": "同事账号被盗了，现在一直被别人顶下线，应该先改密码还是先冻结账号？",
+      "expected_behavior": "不应调用本 skill；应调用 account-compromise-layering 处理账号止损、冻结与找回顺序。",
+      "notes": "账号已被盗后的止损，不是认证实现审计。"
+    },
+    {
+      "id": "snt-02",
+      "type": "should_not_trigger",
+      "prompt": "普通用户把订单 ID 改成别人的，就能看到收货地址和电话，这种越权怎么系统排查？",
+      "expected_behavior": "不应调用本 skill；应调用 access-control-and-idor 建立授权矩阵并验证对象级授权。",
+      "notes": "身份已建立，问题在对象级授权。"
+    },
+    {
+      "id": "snt-03",
+      "type": "should_not_trigger",
+      "prompt": "GraphQL 接口没鉴权，introspection 也没关，响应里还能带出别人的手机号，想按接口查一遍。",
+      "expected_behavior": "不应调用本 skill；应调用 api-and-interface-security 逐接口检查认证、对象级授权、过度暴露与文档面。",
+      "notes": "API 接口层的认证与数据暴露，不是会话机制。"
+    },
+    {
+      "id": "ec-01",
+      "type": "edge_case",
+      "prompt": "只有一张登录页截图，没有账号也没有响应头，能判断这个登录安不安全吗？",
+      "expected_behavior": "调用 auth-session-and-federation-security，但只输出静态核查清单与待验证项，明确不能据此判定认证不安全。",
+      "notes": "证据不足，不能把未观察到的会话行为写成结论。"
+    },
+    {
+      "id": "ec-02",
+      "type": "edge_case",
+      "prompt": "短信验证码登录，验证码 60 秒能重发，换个手机号就能一直发，这算认证问题还是短信轰炸？",
+      "expected_behavior": "调用 business-logic-and-race-security（或转 auth-session-and-federation-security）；本问题的主线是频率限制与短信轰炸，验证码本身是否可复用再作为附加核查。",
+      "notes": "题目本身是二选一提问，两个入口都成立；无论走哪边，结论都要区分认证强度与业务滥用。"
+    },
+    {
+      "id": "ec-03",
+      "type": "edge_case",
+      "prompt": "我们内网老系统还是 admin/admin，但只对 VPN 开放，这个算认证问题还是网络暴露？",
+      "expected_behavior": "调用 auth-session-and-federation-security；先按默认口令与认证强度核查，VPN 与暴露面问题另行交由 web-minimal-exposure 评估。",
+      "notes": "默认口令确属认证问题，但网络可达性会改变风险等级。"
+    }
+  ]
+}

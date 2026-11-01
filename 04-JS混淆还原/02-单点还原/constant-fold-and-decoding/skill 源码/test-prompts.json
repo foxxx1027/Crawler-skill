@@ -1,0 +1,118 @@
+{
+  "skill": "constant-fold-and-decoding",
+  "version": "0.1.0",
+  "source_book": "《反爬虫AST原理与还原混淆实战》 — 李岳阳、卓斌",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "源码里到处是几千几万的数字在做异或，还有字符串加字符串，我想直接算成一个结果写回去。（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "激活本 skill，用 path.evaluate 的 confident 作闸门，valueToNode 替换后 path.skip",
+      "rationale": "纯字面量四则/位运算折叠，典型语法层常量",
+      "notes": "A2 情境 1：字面量算式"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "有一句 eval 里面套着 atob，还有 String.fromCharCode 一大串，我想拿到里面到底是什么字。（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "激活本 skill，把解密函数搬本地跑，atob 补同名实现（Node 里没有）",
+      "rationale": "eval + 浏览器内置解码函数，属执行层还原",
+      "notes": "A2 情境 2：eval(atob)"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "整个文件里全是 \\u4e2d 这种写法，我转出来以后还是转义的样子，没变成汉字。（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "激活本 skill，改用 minified + jsescOption minimal 的生成选项，再做两段 generate+parse",
+      "rationale": "编码层问题发生在生成选项，不在树上",
+      "notes": "A2 情境 3：转义仍是转义"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "一堆赋值被逗号串成一行，像 a=(b=(c=1,c+2),b+3) 这样，我想拆成正常的多行语句。（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "激活本 skill，在 exit 处理 SequenceExpression，前面的表达式提升为独立语句，最后一个的值保留",
+      "rationale": "逗号表达式展平，是本 skill 的独立一档",
+      "notes": "A2 情境 4：逗号嵌套"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "我用 evaluate 算一个表达式，它说不能确定结果，这种情况还该不该替换？（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "激活本 skill，明确 confident=false 时不得替换（可能含运行期变量或 Date/Math.random）",
+      "rationale": "confident 闸门判据，本 skill 的核心停止条件",
+      "notes": "A2 情境 5 的预防侧：不该折的别折"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "After I folded the constants the script runs fine, but the signature no longer matches the captured one. It looks like a timestamp got frozen into the output.（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "激活本 skill，判定把 confident=false 的运行期表达式（Date.now 等）也替换了，回退该折叠",
+      "rationale": "折叠过界的静默失败，是本 skill 的停止条件问题",
+      "notes": "英文场景，对应 A2 情境 5"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "满屏都是在对象上按字符串键一层层取值，我想把中间那层去掉。（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "不应激活本 skill；应激活 junk-instruction-elimination（对象间接层折叠）",
+      "rationale": "这不是求值，而是找定义侧折叠间接层",
+      "notes": "同书兄弟诱饵：间接层 vs 表达式"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "前面那个大数组加上乱序函数和那个解密函数，我想把整池字符串一次都换掉。（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "不应激活本 skill；应激活 string-pool-decrypt-revive（整池复活）",
+      "rationale": "整池有引导代码与 compact 约束，不是零散个案",
+      "notes": "同书兄弟诱饵：整池 vs 个案"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "本地复现的 sign 和抓包差一个字符，我想知道哪些字段参与签名。（自有系统/已授权环境）",
+      "expected_skill": "sign-reproduce-acceptance",
+      "expected_behavior": "不应激活本 skill；应激活 sign-reproduce-acceptance（字段集合反证）",
+      "rationale": "值级验收，不是折叠语义问题",
+      "notes": "跨书诱饵：验收 vs 折叠"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "改名之后报某个名字没定义，可源码里明明声明了。（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "不应激活本 skill；应激活 scope-safe-rename（binding 归属）",
+      "rationale": "编译期作用域问题，与常量求值无关",
+      "notes": "同书兄弟诱饵：命名 vs 求值"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "代码里有个 eval，里面是一大段 base64 包着的东西；这算零散加密，还是算那种整池的字符串？（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "激活本 skill：关键判据是'是否只有单个 eval 个案、有没有大数组+乱序+解密函数三段'；无三段即按零散个案处理",
+      "rationale": "边界：整池与个案，判据是三段形状",
+      "notes": "边界：与 string-pool-decrypt-revive 的重叠"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "I folded a value and it now works, but the request is rejected. Should I look at my folding, or is it the signature fields?（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "激活本 skill：关键判据是'折叠后值被写死/出现过运行期表达式'；先查 confident 与 Date/Math.random，字段集合问题才转 sign-reproduce-acceptance",
+      "rationale": "边界：折叠错值与字段集合，判据是否刚做过常量替换",
+      "notes": "英文边界用例"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条 should_trigger（覆盖 A2 五类情境 + 1 英文）、4 条 should_not_trigger（3 同书 + 1 跨书）、2 条 edge_case（1 中文 1 英文）。 全部用例限定自有系统/已授权环境。"
+}

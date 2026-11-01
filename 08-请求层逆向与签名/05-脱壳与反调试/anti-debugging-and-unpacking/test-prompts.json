@@ -1,0 +1,73 @@
+{
+  "skill": "anti-debugging-and-unpacking",
+  "version": "0.1.0",
+  "source_book": "《逆向与漏洞分析》 魏强、武泽慧",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "adu-01",
+      "type": "should_trigger",
+      "prompt": "样本在OllyDbg里一按F9就退出，不挂调试器又跑得好好的，这是不是有反调试？",
+      "expected_behavior": "应激活 anti-debugging-and-unpacking，并排查 IsDebuggerPresent、CheckRemoteDebuggerPresent、PEB 的 BeingDebugged 与 ForceFlags 等检测点，列出地址、原值与目标值。",
+      "notes": "典型触发：挂调试器即退出、脱机正常，对应 A2 第 1 条。"
+    },
+    {
+      "id": "adu-02",
+      "type": "should_trigger",
+      "prompt": "入口处只有pushad和一段解压循环，IDA里看不到业务字符串，OEP该怎么找？",
+      "expected_behavior": "应激活 anti-debugging-and-unpacking，并先判定壳类型，再用 ESP 定律在 pushad 后的栈空间下硬件访问断点，命中后单步落到 OEP，并做 dump 校验。",
+      "notes": "典型触发：入口是壳代码、业务字符串缺失、需要 OEP，对应 A2 第 3、5 条。"
+    },
+    {
+      "id": "adu-03",
+      "type": "should_trigger",
+      "prompt": "The packed binary keeps exiting under x64dbg; how do I find the OEP and dump it?",
+      "expected_behavior": "应激活 anti-debugging-and-unpacking，并按“判壳与判保护、处理反调试、找 OEP、dump 修复、定位真实入口”的顺序恢复程序。",
+      "notes": "英文触发：含 packed binary、OEP、dump，命中 description 中的英文信号。"
+    },
+    {
+      "id": "adu-04",
+      "type": "should_trigger",
+      "prompt": "这个程序一放进调试器就自己关掉，平时双击却正常，我想知道它用什么手段挡住我，怎么接着往下看。",
+      "expected_behavior": "应激活 anti-debugging-and-unpacking，并识别其检测通道（API 返回值或 PEB 标志字段），给出对应的绕过或补丁位置，再恢复正常分析。",
+      "notes": "不含“反调试/脱壳/OEP”等术语，但现象与 A2 第 1 条一致，用于检验是否只靠关键词匹配。"
+    },
+    {
+      "id": "adu-05",
+      "type": "should_not_trigger",
+      "prompt": "函数序言是push ebp、mov ebp,esp，参数从ebp+8开始取，我想确认它是cdecl还是stdcall、有几个参数。",
+      "expected_behavior": "不应激活本 skill，应激活 cpp-semantic-recovery，因为反汇编已干净可读，当前问题是调用约定与参数的语义解释，不涉及保护。",
+      "notes": "跨 skill 诱饵：防把任何含 pushad/push ebp 的栈操作都当成脱壳线索；本 skill 只在保护挡住分析时介入。"
+    },
+    {
+      "id": "adu-06",
+      "type": "should_not_trigger",
+      "prompt": "手里只有一个DLL，领导只说“分析一下”，没给交付要求，我该怎么规划这次逆向？",
+      "expected_behavior": "不应激活本 skill，应激活 reverse-engineering-workflow，因为样本没有保护迹象，缺的是目标框定与产物定义，不是入口恢复。",
+      "notes": "跨 skill 诱饵：防把“不知道从哪开始”误判为“找不到入口/OEP”；两者的缺失对象不同。"
+    },
+    {
+      "id": "adu-07",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这个PCAP里的HTTP请求全部导出来，按域名分个类。",
+      "expected_behavior": "不应激活本 skill，应激活 none，因为目标是纯流量数据处理，不存在程序入口、壳或反调试。",
+      "notes": "完全无关诱饵：命中 B 段“纯数据文件不存在入口点与壳”的排除条件。"
+    },
+    {
+      "id": "adu-08",
+      "type": "edge_case",
+      "prompt": "这是64位样本，一附加调试器就退，书里的PEB偏移是32位的，我还能按BeingDebugged去找检测点吗？",
+      "expected_behavior": "应激活 anti-debugging-and-unpacking，但限定为：先核对 x64 的 PEB 结构布局与偏移，再列检测点表，且仅对自有或授权样本操作，不能照搬 32 位示例地址。",
+      "notes": "边界上应调用：反调试检测通道仍然适用，但位数变化要求重新核对偏移，命中 B 段“64 位需另行核对”的限定。"
+    },
+    {
+      "id": "adu-09",
+      "type": "edge_case",
+      "prompt": "样本确认是VMProtect虚拟化壳，IDA里全是vm_handler，我想用ESP定律直接找OEP。",
+      "expected_behavior": "不应激活本 skill，应激活 none（需 VM handler 识别与字节码还原的专门路线），因为 ESP 定律对虚拟化壳无效，且虚拟化壳超出本书范围。",
+      "notes": "边界上不应调用：命中 B 段 VMProtect/Themida 类虚拟化壳的硬排除条件，检验不会把普通脱壳流程套到虚拟化保护上。"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "9 条用例按 4/3/2 配比：2 条典型（反调试退出、找 OEP）、1 条英文、1 条无术语同情境；3 条不触发中 2 条分别诱向 cpp-semantic-recovery 与 reverse-engineering-workflow，另 1 条为纯 PCAP 数据；2 条边界分别检验“64 位偏移需重核但仍可用”和“虚拟化壳不适用 ESP 定律”。跨 skill 诱饵只指向唯一正确 skill，容错为 0。"
+}

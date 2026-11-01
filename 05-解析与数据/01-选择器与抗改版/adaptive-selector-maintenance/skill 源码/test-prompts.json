@@ -1,0 +1,52 @@
+{
+  "skill": "adaptive-selector-maintenance",
+  "version": "0.1.0",
+  "source_book": "《爬虫-Scrapling》中文文档 — Scrapling 项目, D4Vinci",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "商品列表爬了三个月，昨天站点改版，.product 选择器直接返回空列表",
+      "expected_behavior": "应激活 adaptive-selector-maintenance，先确认有没有改版前的 auto_save 存档；有存档就跑 adaptive 重定位拿候选集，但不直接上线",
+      "notes": "正面场景：改版后选择器失效，且有历史存档前提"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "改版后价格字段抓成了库存的值，条数也对不上",
+      "expected_behavior": "应激活 adaptive-selector-maintenance，用可验算字段（价格量纲、库存、条数、分布）做验收，不能只看「有没有抓到东西」",
+      "notes": "正面场景：字段错位，失败伪装成成功"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "还没改版，但我想提前给定位逻辑上保险，该怎么做",
+      "expected_behavior": "应激活 adaptive-selector-maintenance，说明机制是两段式：建站／上线时先 auto_save 存元素身份，改版后才有得重定位；改版之后才想起开自适应是空转",
+      "notes": "正面场景：改版前存基线"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "CSS 里 :nth-child(2n+1) 选的是哪些元素，和 :nth-of-type 有什么区别",
+      "expected_behavior": "不应激活本 skill，这是纯 CSS 语法知识问答，没有维护闭环要跑",
+      "notes": "诱饵：纯知识"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "选择器老失效，我想从写法上改稳一点：别再用 nth-child 定位，改用语义定位和文本锚点",
+      "expected_behavior": "不应激活本 skill，应激活 semantic-selector-robustness，这是选择器写法本身的问题，不是改版后的重定位",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：同是「选择器不稳」，一个是写稳、一个是改版后修"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "站点整站重构了，类名全变成 a1b2c3d 这种哈希，自适应跑出来一堆乱七八糟的元素",
+      "expected_behavior": "不应激活 adaptive-selector-maintenance 来调阈值：整站重构（类名哈希化、多实例组件、Shadow DOM）超出「常规 CSS 改版 ≥90%」的可信区间，应回退手工选择器并重建存档",
+      "notes": "边界：先分类改版类型再决定信不信自适应，阈值放低只会更不像"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书或跨书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

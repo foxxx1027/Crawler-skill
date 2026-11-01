@@ -1,0 +1,76 @@
+{
+  "skill": "client-side-and-frontend-security",
+  "version": "0.1.0",
+  "test_cases": [
+    {
+      "id": "st-01",
+      "type": "should_trigger",
+      "prompt": "我们单页应用从 location.hash 取参数直接塞进 innerHTML，页面没报错，这种算不算 DOM XSS？",
+      "expected_behavior": "调用 client-side-and-frontend-security；建立 source→sink 链路，确认 fragment 到 innerHTML 之间是否有上下文编码，并给出授权内最小对照与修复建议。",
+      "notes": "典型 DOM XSS 场景，fragment 不进入服务端日志，传统扫描器容易漏报。"
+    },
+    {
+      "id": "st-02",
+      "type": "should_trigger",
+      "prompt": "iframe 之间用 postMessage 传用户资料，接收方只判断消息里有 token，没看 origin，会不会被别的网站利用？",
+      "expected_behavior": "调用 client-side-and-frontend-security；核对 targetOrigin、event.origin/source 与消息 schema，并检查收到数据后是否进入 HTML 或导航 sink。",
+      "notes": "跨窗口消息信任边界问题，核心是验源与验结构。"
+    },
+    {
+      "id": "st-03",
+      "type": "should_trigger",
+      "prompt": "接口返回的 Access-Control-Allow-Origin 跟着请求的 Origin 变，还带 credentials，前端能读到数据，这算配置问题还是漏洞？",
+      "expected_behavior": "调用 client-side-and-frontend-security；核对 CORS 允许源、凭据与接口敏感数据，判断是配置缺陷还是会话数据泄露，并给出白名单修复与复测方法。",
+      "notes": "反射 Origin 加 credentials 是浏览器侧跨域信任边界问题。"
+    },
+    {
+      "id": "st-04",
+      "type": "should_trigger",
+      "prompt": "登录后 token 存在 localStorage，退出只清了当前标签页，另外开一个标签还能用，这个要怎么查？",
+      "expected_behavior": "调用 client-side-and-frontend-security；枚举前端存储与缓存中的敏感数据，核对注销清除、跨标签共享和生命周期，并检查 XSS 可读面。",
+      "notes": "本地存储与注销清理问题，属于客户端数据暴露。"
+    },
+    {
+      "id": "snt-01",
+      "type": "should_not_trigger",
+      "prompt": "搜索关键词提交后服务端原样回显到 HTML 里，输入 script 标签能弹窗，这种反射型 XSS 怎么构造利用？",
+      "expected_behavior": "不应调用本 skill；应调用 non-memory-vulnerability-analysis 处理服务端反射型 XSS 的注入判据与利用验证。",
+      "notes": "服务端输出未编码导致的 XSS，不属于浏览器内部 source→sink。"
+    },
+    {
+      "id": "snt-02",
+      "type": "should_not_trigger",
+      "prompt": "Chrome 打开一个恶意页面后渲染进程崩溃，怀疑是堆溢出，想看看能不能控制执行流，应该从哪下手？",
+      "expected_behavior": "不应调用本 skill；先转 vuln-analysis-strategy 判断漏洞类型与分析方法，现代 64 位 Chrome 的堆破坏已超出 browser-heap-spray-and-uaf 的适用范围，无匹配 skill 时说明原因也可接受。",
+      "notes": "内存破坏与利用，不是前端逻辑或跨域配置；不能套用旧版浏览器利用 skill。"
+    },
+    {
+      "id": "snt-03",
+      "type": "should_not_trigger",
+      "prompt": "浏览器主页被改成陌生导航站，右键菜单也多出广告，改回来又变回去，怎么清理？",
+      "expected_behavior": "不应调用本 skill；应调用 browser-hijack-repair 处理浏览器劫持后的清理与恢复。",
+      "notes": "事后修复场景，不是预防性前端安全审查。"
+    },
+    {
+      "id": "ec-01",
+      "type": "edge_case",
+      "prompt": "我们的 CSP 是 default-src 'self'，但页面里有内联脚本和 eval，业务又说短期不能改，这种情况风险到底有多大？",
+      "expected_behavior": "调用 client-side-and-frontend-security；区分强制策略与 Report-Only、核对 unsafe-inline/unsafe-eval 的实际暴露面，按可执行 sink 与数据敏感度评估风险，而不是只凭 CSP 字符串定性。",
+      "notes": "CSP 配置过宽但需要结合页面实际执行点判断影响。"
+    },
+    {
+      "id": "ec-02",
+      "type": "edge_case",
+      "prompt": "Electron 应用开了 nodeIntegration，渲染进程能直接 require('fs')，这算前端问题还是桌面端本地数据问题？",
+      "expected_behavior": "调用 client-side-and-frontend-security；按移动端/桌面端本地数据与通信模块检查渲染进程隔离、预加载脚本暴露面、IPC 与本地文件访问。",
+      "notes": "桌面端渲染进程安全，属于本 skill 的第 6 个模块。"
+    },
+    {
+      "id": "ec-03",
+      "type": "edge_case",
+      "prompt": "只有一张登录页截图，没有响应头也没有可用账号，能判断这个登录表单有没有 CSRF 吗？",
+      "expected_behavior": "调用 client-side-and-frontend-security；只输出基于可见信息的静态检查清单与待验证项，明确不能下确定结论，不进行主动验证。",
+      "notes": "证据不足的边界场景，应限制结论强度。"
+    }
+  ]
+}

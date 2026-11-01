@@ -1,0 +1,52 @@
+{
+  "skill": "fetch-tier-triage",
+  "version": "0.1.0",
+  "source_book": "《爬虫-Scrapling》中文文档 — Scrapling 项目, D4Vinci",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "这个列表页的数据在 HTML 源码里就有，我是不是直接 requests 就行，还是必须上浏览器渲染",
+      "expected_behavior": "应激活 fetch-tier-triage，先跑「必须 JS 渲染 × 已被检测」两轴，落在「静态可解」格就定请求库档，不上浏览器",
+      "notes": "正面场景：抓取档位定档"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "已经换成隐身浏览器了，还是被 Akamai 挡回来；是不是再升一档、换个更强的浏览器就行",
+      "expected_behavior": "应激活 fetch-tier-triage，切到能力边界表逐条核对，命中「无原生方案」就判停（外接第三方求解、降频或换数据源），并说明升档解决不了检测",
+      "notes": "正面场景：能渲染却仍被拦，必须做边界体检而非继续升档"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "领导问这套工具能不能把整站几万个页面都爬下来，还要每天更新一次",
+      "expected_behavior": "应激活 fetch-tier-triage，做规模边界体检：单页请求形态不具备跟链接、深度、去重、断点续爬，整站要换工具形态，这与反爬无关",
+      "notes": "正面场景：问「这工具能不能搞定这个站」，需回答能力与规模边界"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "pip install scrapling 之后还有哪些可选依赖，浏览器要怎么装",
+      "expected_behavior": "不应激活本 skill，这是纯安装信息查询，没有定档决策",
+      "notes": "诱饵：纯信息查询"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "它返回 403 加一段 JS challenge，我想搞清楚到底是 TLS 指纹还是 cookie 的问题",
+      "expected_behavior": "不应激活本 skill，应激活 anti-bot-triage-and-human-parity，这是被拦之后的信号分诊",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：同为硬骨头站点，一个是选档、一个是分诊"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我只想把一段本地存下来的 HTML 字符串解析出标题和价格，全程不联网",
+      "expected_behavior": "不应激活 fetch-tier-triage：没有请求环节就不存在定档，属纯解析需求，直接用 parser 即可",
+      "notes": "边界：只要解析不要请求，description 明确排除"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书或跨书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

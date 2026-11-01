@@ -1,0 +1,52 @@
+{
+  "skill": "js-param-locate-ladder",
+  "version": "0.1.0",
+  "source_book": "《爬虫逆向进阶实战》 — 李玺",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "站点是 webpack 打包的，变量全是 e、t、n 这种单字母，我全局搜 signature 搜了三次都没结果",
+      "expected_behavior": "应激活 js-param-locate-ladder，只允许小幅换词（signature→sign→接口名）两轮为止，仍不中则换级到 Initiator 的 Call Stack 往下点",
+      "notes": "正面场景：搜不到 + 打包后变量名成单字母"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我手上只有一个 32 位密文 8f3a9c...，连这个参数叫什么都不知道，就夹在请求里",
+      "expected_behavior": "应激活 js-param-locate-ladder，走「值反查代码」的内存漫游，把值→变量→代码位置建成索引，而不是继续猜参数名",
+      "notes": "正面场景：只有值、没有参数名，阶梯对应唯一一级"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "那个加密链接不是发请求时生成的，是点「查看详情」那一刻才拼出来的，静态搜索和调用栈都空手",
+      "expected_behavior": "应激活 js-param-locate-ladder，判为「触发动作驱动」，改在 DOM 事件监听上下断点（选中 a 标签找 event listeners）再单步进 VM",
+      "notes": "正面场景：只有触发动作，前两级必然落空"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "JS 里 atob 和 btoa 有什么区别，哪个能解 Base64",
+      "expected_behavior": "不应激活本 skill，这是纯 JavaScript API 知识问答，没有定位失败的现象",
+      "notes": "诱饵：纯代码知识"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我在安卓 App 里抓到了接口，Jadx 里搜 signature 命中三百多处，不知道点哪个",
+      "expected_behavior": "不应激活本 skill，应激活 android-param-locate，因为载体是 APK 不是网页",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：同为「搜不到 sign」，但载体决定走哪条阶梯"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "全局搜 sign 只命中一行完全看不懂的混淆代码，这算找到了吗，还要不要往下走",
+      "expected_behavior": "可以激活 js-param-locate-ladder：属阶梯第一级命中，但判据是能否在这里下断点、看到入参与返回值；一行看不懂的命中不算终点，做不到就换级到调用栈",
+      "notes": "边界：命中 ≠ 定位到生成逻辑，要给出判断标准"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

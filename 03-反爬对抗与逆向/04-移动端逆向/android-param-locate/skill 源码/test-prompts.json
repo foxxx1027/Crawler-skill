@@ -1,0 +1,52 @@
+{
+  "skill": "android-param-locate",
+  "version": "0.1.0",
+  "source_book": "《爬虫逆向进阶实战》 — 李玺",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "Jadx 里全局搜 signature 命中三百多处，APK 一百多兆，我该从哪点进去",
+      "expected_behavior": "应激活 android-param-locate，先按包名做减法（剔除网络库、JSON 库、图片库、统计 SDK），再改用接口里独一无二的业务参数（设备号、城市 ID 之类）收敛检索",
+      "notes": "正面场景：命中过多、不知道点哪个"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "APK 太大 Jadx 载不全，静态搜基本没法用，只能动态看，可我不知道该 Hook 什么",
+      "expected_behavior": "应激活 android-param-locate，改走动态批量排除：一次 Hook 全部标准加密入口（MD5/AES/SHA/Hmac），打印算法、密钥、明文、密文与调用栈",
+      "notes": "正面场景：静态不可用，转动态批量排除"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "Jadx 里搜 sn 命中几个类都不像，我想用 Frida 直接钩加密入口，但不确定钩哪一层",
+      "expected_behavior": "应激活 android-param-locate，用返回值形态校验 Hook 点（打出成品链接说明钩在组装层，要继续往下探到真正吐密文的方法），并拿 Hook 值与抓包值比对",
+      "notes": "正面场景：Hook 点选层的判断，符合「Frida Hook 加密入口」"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "Frida 的 Java.perform 里怎么拿到一个类的实例对象",
+      "expected_behavior": "不应激活本 skill，这是纯 Frida API 代码问题，没有「在 APK 里定位加密参数」的目标",
+      "notes": "诱饵：纯代码"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "同一个加密逻辑我想在小程序里找，代码是 webpack 压过的，变量名全是单字母",
+      "expected_behavior": "不应激活本 skill，应激活 js-param-locate-ladder，载体是 Web／小程序不是 APK",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：同为「搜不到 sign」，载体不同"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "App 里 sign 的 Java 类找到了，但真正算值的是 libxxx.so，Java 只是把参数传进去",
+      "expected_behavior": "可以激活 android-param-locate 做收口判断，但结论应是「Java 层到此为止」：参数已确认落在 native 层，转 native-hook-or-unidbg；本 skill 的终点是找到返回最终密文的 Java 层代码",
+      "notes": "边界：定位成功后发现落 native，要换 skill 而不是继续在 Jadx 里翻"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

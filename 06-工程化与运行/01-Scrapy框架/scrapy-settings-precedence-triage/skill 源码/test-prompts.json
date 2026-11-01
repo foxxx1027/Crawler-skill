@@ -1,0 +1,127 @@
+{
+  "skill": "scrapy-settings-precedence-triage",
+  "version": "0.1.0",
+  "source_book": "《Scrapy网络爬虫实战》 — 东郭大猫",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "同样的命令，笔记本上跑得好好的，扔进服务器定时任务就回到最保守的默认",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "典型工作目录不同导致项目配置根本没加载",
+      "expected_behavior": "先确认进程在项目内还是项目外，用 scrapy settings --get 读实际生效值，再修入口（cd 项目根）",
+      "notes": "正面场景：本机好服务器坏"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "代码里把并发写成 32，日志第一行还是 16",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "写入值与生效值不一致，是覆盖者定位问题",
+      "expected_behavior": "按 -s → custom_settings → 项目 settings → default 逐层找最终写值的位置",
+      "notes": "正面场景：值没生效"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我在命令末尾追加了临时参数想压过文件，结果毫无变化",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "命令行本应最高优先级，没变化说明命令根本没进项目或参数没被接收",
+      "expected_behavior": "确认命令执行目录与参数拼写，在目标环境用 --get 复测",
+      "notes": "正面场景：命令行参数像没传"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我只想让其中一只爬虫换一套写库组件，另一只不受影响，结果两只都变了",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "Spider 专属配置的作用域与优先级问题",
+      "expected_behavior": "该用 Spider 类体上的 custom_settings（class 属性），并确认没被命令行覆盖",
+      "notes": "正面场景：Spider 配置串号"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "我在初始化函数里塞了那份字典，可看起来从来没被用上",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "custom_settings 必须是类属性，写在实例/构造函数里不生效",
+      "expected_behavior": "移到类体上，说明设置必须在 Spider 启动前更新",
+      "notes": "正面场景：写错位置"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "写库的类写完了也 import 了，跑起来一点输出没有，这算没读到还是没启用？",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "组件静默不执行，先区分启用（未注册）与优先级（被覆盖）",
+      "expected_behavior": "先查是否在对应字典注册与键名，再按四层阶梯找覆盖者",
+      "notes": "正面场景：组件不执行（与 middleware-layering 有交叉）"
+    },
+    {
+      "id": "should-trigger-07",
+      "type": "should_trigger",
+      "prompt": "Same repo, same command: my laptop behaves one way and the container another. Which file is actually being read?",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "英文版同义：同一命令两种行为，先判配置来源",
+      "expected_behavior": "在容器内查工作目录与 scrapy.cfg，用 --get 读生效值，再修入口",
+      "notes": "正面场景（英文）"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我那个注入请求头的钩子写好了，可发出去用的还是默认标识",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "值已读到但链上逻辑没执行，属层/顺序/返回值契约",
+      "expected_behavior": "不激活本 skill；查注册字典、层与显式 return",
+      "notes": "同书兄弟诱饵：中间件不生效"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "长任务跑一半断了，我想重启后接着抓、别再重复",
+      "expected_skill": "scrapy-production-setup",
+      "rationale": "断点续跑属部署与上生产形态，不是配置优先级",
+      "expected_behavior": "不激活本 skill；用 JOBDIR 等续跑机制并核对去重",
+      "notes": "同书兄弟诱饵：续跑与上线"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "I want the crawl to be gentler so the site doesn't fall over — how many concurrent workers and what gap is reasonable?",
+      "expected_skill": "crawl-pacing-and-concurrency",
+      "rationale": "问的是该给多少速率，不是设了为什么没生效",
+      "expected_behavior": "不激活本 skill；按速率预算核算并发与延时",
+      "notes": "跨书诱饵（英文）：速率取值"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "整站抓取我怕跑飞、抓不完，想设深度上限和停机条件",
+      "expected_skill": "crawl-scope-and-halt",
+      "rationale": "范围与停机策略，不是某个键的取值来源",
+      "expected_behavior": "不激活本 skill；定范围、去重与停机条件",
+      "notes": "跨书诱饵：范围与停机"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我把开关写进了那个文件，行为跟默认一模一样，会不会是名字拼错了？",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "键名拼错与未注册同样表现为改了不生效，仍属本 skill 的排查面",
+      "expected_behavior": "核对键名（含常见单复数差异）与是否注册，再按四层找覆盖者；键名错则修正而非继续加值",
+      "notes": "边界：判据是值本身从未被读到，而非被上层覆盖"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "只有一个地址想要更长的等待时间，我是不是该去改全局？",
+      "expected_skill": "scrapy-settings-precedence-triage",
+      "rationale": "单请求例外应用 Request.meta，改全局会波及所有请求",
+      "expected_behavior": "不改全局；在该 Request 的 meta 上设超时，并说明这是本 skill 的排除区",
+      "notes": "边界：判据是作用域是一个请求还是整个进程"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "7 条应调用 / 4 条诱饵（2 条同书兄弟、2 条跨书，其中 1 条英文）/ 2 条边界模糊。"
+}

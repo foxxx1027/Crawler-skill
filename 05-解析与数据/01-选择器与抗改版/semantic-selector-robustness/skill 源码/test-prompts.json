@@ -1,0 +1,52 @@
+{
+  "skill": "semantic-selector-robustness",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔；《用 Python 写网络爬虫（第2版）》 — 凯瑟琳·雅姆尔、理查德·劳森",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "对方页面改版后我的选择器一条都取不到了。之前一直用 find_all('table')[4].find_all('tr')[2]，跑了大半年都没事。",
+      "expected_behavior": "应激活 semantic-selector-robustness，解释位置索引编码的是旧版页面快照、加一列就整体错位，改锚点为 id/class/语义属性或父子兄弟关系，并先在浏览器控制台用 $() / $x() 验证返回数量与预期一致再落进代码。",
+      "notes": "正面场景：改版后抓空 + 典型的深链位置选择器"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我要解析十万个页面的 HTML，一次要抽十来个字段。正则、BeautifulSoup、lxml 到底选哪个？",
+      "expected_behavior": "应激活 semantic-selector-robustness，按三个量选型（要跑几次、一次取多少字段、能否接受第三方依赖），给出“长期跑、字段多 → lxml（CSS 或 XPath）”的结论，并提醒网络才是瓶颈、别为微秒级差异牺牲可读性。",
+      "notes": "正面场景：解析器选型是 description 明列的能力"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "脚本跑一半突然 AttributeError: 'NoneType' object has no attribute 'get_text'，我猜是某些页面结构不一样，但不知道该怎么兜。",
+      "expected_behavior": "应激活 semantic-selector-robustness，先加“元素数为 0 或关键字段为空即显式失败/记异常日志”的校验，再用正样本归纳二三条共同特征压成一条过滤规则，并把易变锚点换成语义锚点。",
+      "notes": "正面场景：AttributeError 类改版失效，description 明写"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "这个页面抓下来整段是空的，View Source 里根本搜不到商品价格，但 Network 面板里有一条 XHR 返回了完整 JSON。",
+      "expected_behavior": "不应激活 semantic-selector-robustness，因为数据不在 HTML 里、解析器再怎么写也取不到，应激活 data-path-cost-ladder 排序取数路径（并在阶梯的接口一格转 page-owned-api-recon）。",
+      "notes": "跨 skill 混淆诱饵：MERGE_PLAN/LINKS 点名 data-path 与 semantic-selector 对照，两者都会在“取不到数据”时被想起"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "pip install lxml 时报了找不到 libxml2 头文件的错误，这种环境问题一般怎么装？",
+      "expected_behavior": "不应激活本 skill，因为这是依赖安装的纯信息查询，不涉及解析器选型或选择器稳健性。",
+      "notes": "诱饵：纯信息查询，且含 lxml 关键词"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我的选择器现在还能跑，就是写成 find_all('div')[3] 这种。既然没坏，是不是先别动？",
+      "expected_behavior": "应激活 semantic-selector-robustness：技术上能跑不等于稳健，位置索引把页面快照编号写进了代码，应评估改版风险并建议换成语义锚点、补一条“0 条即失败”的校验；但不需要重写整个解析流程。理由：这是“潜在失效风险”而非当前故障。",
+      "notes": "边界：现在没坏，但已埋下改版失效的种子"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

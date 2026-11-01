@@ -1,0 +1,52 @@
+{
+  "skill": "data-path-cost-ladder",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔；《用 Python 写网络爬虫（第2版）》 — 凯瑟琳·雅姆尔、理查德·劳森",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我要抓 quotes.toscrape.com 上的作者名和标签，与其研究 CSS 选择器，是不是直接开 Selenium 点页面更省事？",
+      "expected_behavior": "应激活 data-path-cost-ladder，先判数据是否已在初始 HTML 里（该测试站是静态页，View Source 即可见），输出“用 lxml/BS4 解析即可，浏览器是最贵的那一格，不该先上”，并说明阶梯上比浏览器便宜的几格已够用。",
+      "notes": "正面场景：用户正准备“直接开浏览器”，正是阶梯要拦住的入口"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "某平台商品页的价格在 View Source 里能搜到数字，但它不是标签，而是包在一段 <script> 里的一个 JSON 变量。这种情况我该按什么顺序试？",
+      "expected_behavior": "应激活 data-path-cost-ladder，判定数据属阶梯第二格“JS 内嵌数据”，给出“直接读 JS 源文件 → 正则/切片取出变量 → 按 JSON 解析”的路径，而不是去解析 DOM 或上浏览器。",
+      "notes": "正面场景：数据不在 DOM 而在 JS 里，属于阶梯中低成本的固定一格"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "同一批商品数据，站点移动版页面一页给全，桌面版要翻十几页才凑齐。我是不是该想想抓哪一份？",
+      "expected_behavior": "应激活 data-path-cost-ladder，指出这属于阶梯最便宜的一格（让别人替你换一份页面：移动版/打印版），先比较移动版 URL 与桌面版翻页成本，再谈解析器。",
+      "notes": "正面场景：多版本页面是阶梯第一格，用户问的是“抓哪一份”"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "下周要给一个新数据源立项，先帮我做尽调：读 robots.txt 看 crawl-delay 和禁入路径、用 sitemap 估总量、查所有者，最后给我一个 go/no-go。",
+      "expected_behavior": "不应激活 data-path-cost-ladder，因为这是动手前的项目级尽调与否决闸门，应激活 scrape-preflight-and-entry-ladder 输出“入口 + 速率上限 + 风险等级 + go/no-go”。",
+      "notes": "跨 skill 混淆诱饵：preflight 与取数路径梯队在“要抓某个站”上高度相似，MERGE_PLAN 已点名对照"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "requests.get 的时候 timeout 参数单位和默认值是多少？想确认一下别写错。",
+      "expected_behavior": "不应激活本 skill，因为这是纯库参数的信息查询，不涉及“这个站的数据走哪条入口”的路径取舍。",
+      "notes": "诱饵：纯信息查询，与取数路径决策无关"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "某平台详情页是 AJAX 拉的，我已经在 Network 面板里找到那条返回 JSON 的请求。接下来是不是还是按阶梯继续往上走到浏览器？",
+      "expected_behavior": "可以激活 data-path-cost-ladder，用来确认这条请求就落在阶梯的“页面自用 JSON 接口”一格、因此不必再走到最贵的浏览器格；但阶梯到此为止，不该由它来展开接口归档与重放（应转 page-owned-api-recon）。理由：用户问的是“还要不要往上走”，属路径排序，不属接口侦察。",
+      "notes": "边界：介于“路径排序”和“接口侦察”之间，前者只回答停在哪一格"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

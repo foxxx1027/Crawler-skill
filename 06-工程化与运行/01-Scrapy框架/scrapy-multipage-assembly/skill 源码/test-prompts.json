@@ -1,0 +1,127 @@
+{
+  "skill": "scrapy-multipage-assembly",
+  "version": "0.1.0",
+  "source_book": "《Scrapy网络爬虫实战》 — 东郭大猫",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "列表上只有标题和链接，正文和作者得点进去才有，怎么把两边的信息合成一条记录？",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "字段分散在两个页面，回调之间需要携带半成品",
+      "expected_behavior": "首跳建 Item 并写入 meta，下一跳取出补字段后再 yield",
+      "notes": "正面场景：列表 + 详情"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "日志显示抓了 500 条都成功，可导出来的表里作者一列大半是空的",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "成功率掩盖了字段缺口，是半成品静默入库的典型症状",
+      "expected_behavior": "末跳前断言关键字段齐备，缺则标待补；把成功率与可用率分开统计",
+      "notes": "正面场景：静默缺字段"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "有个页面还得再点进作者主页才能拿到粉丝数，这样一共要进三层，我怕中间断了就丢数据",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "三跳以上接力，失败会留下半成品",
+      "expected_behavior": "画字段—页面矩阵，逐跳 meta 接力，每跳挂失败处理，末跳断言",
+      "notes": "正面场景：三跳接力"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "中间那一步偶尔超时，最后那条记录还是照样入库了，只是少了几列",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "失败无兜底，半成品被判为成功",
+      "expected_behavior": "每跳挂失败处理并按异常类型分派：页面不存在写补抓清单，超时换出口或重试；未齐不写正式集合",
+      "notes": "正面场景：失败未兜底"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "我想让下载的图片按作者名加标题命名，可下载那一步只能拿到链接",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "媒体请求需要注入业务字段，属组装链路的延伸",
+      "expected_behavior": "在发起媒体请求时把 Item 写入 meta，文件名从 meta 取而不是从 URL 猜",
+      "notes": "正面场景：媒体命名拿不到业务字段（与 middleware-layering 有交叉）"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "我想把页面没了和等超时分开做不同补救，现在全塞在一个 except 里",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "不同失败原因需要不同补救，应先分类再路由",
+      "expected_behavior": "先把现场记录完整，再按异常类型判：页面错误进补抓清单，连接/超时换出口或重试，其余走默认",
+      "notes": "正面场景：失败分类"
+    },
+    {
+      "id": "should-trigger-07",
+      "type": "should_trigger",
+      "prompt": "Success rate looks great but a chunk of rows are half-empty; how do I stop incomplete records from being written?",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "英文版同义：成功率与可用率分离，末跳拦截",
+      "expected_behavior": "末跳断言必需字段，缺则进待补集合，不写正式集合",
+      "notes": "正面场景（英文）"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "规则配了，可是只停在第一层，第二层地址根本没被请求",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "规则不跟进，属入口与规则职责，不是记录组装",
+      "expected_behavior": "不激活本 skill；查 parse 是否被覆写、入口是否绕过规则",
+      "notes": "同书兄弟诱饵：规则不跟进"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我 yield 出去的请求调度器里数不到，日志也没报错",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "请求在链上被吞，是返回值契约问题",
+      "expected_behavior": "不激活本 skill；查输出方法是否只透传 Item",
+      "notes": "同书兄弟诱饵：请求消失"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "The paging script finished, but the table only holds about one page worth of rows.",
+      "expected_skill": "pagination-acceptance",
+      "rationale": "翻页推进未生效，是分页验收问题",
+      "expected_behavior": "不激活本 skill；核对最终 URL 偏移、条数对账与去重键",
+      "notes": "跨书诱饵（英文）：翻页验收"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "整页数据其实在页面自己发的那个接口里一次就全了，我还要不要一层层点进去？",
+      "expected_skill": "page-owned-api-recon",
+      "rationale": "数据在单个响应里，不应做多跳组装",
+      "expected_behavior": "不激活本 skill；复用页面自带的取数接口，拆掉额外跳数",
+      "notes": "跨书诱饵：单接口可得"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "某个字段列表页其实也有，只是偶尔显示不全，我还要不要再多进一层？",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "同页可得字段应尽量不额外跳，但显示不全时可保留兜底路径",
+      "expected_behavior": "先判该字段是否本页稳定可得；稳定则拆掉该跳，不稳定则保留详情跳并只在缺失时触发",
+      "notes": "边界：判据是字段是否在同一页稳定可得"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "抓完发现缺列，但缺的是可选字段，也要全部拦下来吗？",
+      "expected_skill": "scrapy-multipage-assembly",
+      "rationale": "断言只应覆盖关键字段，可选字段缺失不应阻塞入库",
+      "expected_behavior": "把字段分为必需与可选；只对必需字段断言，可选缺失记录缺失率但不阻塞",
+      "notes": "边界：判据是字段是否影响这条记录可用"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "7 条应调用 / 4 条诱饵（2 条同书兄弟、2 条跨书，其中 1 条英文）/ 2 条边界模糊。"
+}

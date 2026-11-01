@@ -1,0 +1,127 @@
+{
+  "skill": "scrapy-crawlspider-rule-division",
+  "version": "0.1.0",
+  "source_book": "《Scrapy网络爬虫实战》 — 东郭大猫",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我用了那个会自动顺着链接走的爬虫类，跑了半小时日志里不断有 200，可入库条数一直就是最开始那几条",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "抓到了页却只产出起始页结果，典型是规则职责或入口被破坏",
+      "expected_behavior": "先看 items 是否恒等于起始页条数，再查 parse 是否被覆写、列表页是否误挂回调、入口是否绕过规则",
+      "notes": "正面场景：只抓起始页"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我把自己的解析方法命名成框架里那个保留名字，结果后面什么都没发生",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "保留方法被覆写，规则链整体失效",
+      "expected_behavior": "恢复保留方法，字段解析另起名字；起始页需要处理时用专门的入口回调",
+      "notes": "正面场景：覆写保留方法"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我给翻页那类页面也挂了解析方法，现在同一条内容出现两遍，字段还对不上",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "列表/分页页只应喂链接，不应产 Item",
+      "expected_behavior": "去掉列表页回调、只保留继续跟进；并核对字段是否从错误层级取值",
+      "notes": "正面场景：同页两次解析"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "为了带登录凭证我改写了入口方法，之后所有跟进规则都哑火了",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "起始请求绕过规则入口，整类退化成普通爬虫",
+      "expected_behavior": "让起始请求的 callback 回到框架的规则入口（现代写法为 Request(url, callback=self.parse)）",
+      "notes": "正面场景：重写入口后规则失效"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "站点有用户页、关注列表、粉丝列表、页码四种地址，我不知道哪几种该解析、哪几种只该继续往下走",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "按页面角色拆规则，是该技能的核心动作",
+      "expected_behavior": "列角色表：有字段的页给回调，纯列表/分页只 follow；规则从窄到宽排",
+      "notes": "正面场景：规则分工"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "两条规则好像都命中了同一个链接，最后走的是哪条？我想按地址形态而不是页面样式来分",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "规则按第一条命中生效，且应描述地址形态",
+      "expected_behavior": "说明第一条命中生效、后续规则不再看；把 allow 收窄到 URL 形态，避免重叠",
+      "notes": "正面场景：规则重叠与排序"
+    },
+    {
+      "id": "should-trigger-07",
+      "type": "should_trigger",
+      "prompt": "My crawler subclass with link rules never leaves the seed URLs — no error, just stuck.",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "英文版同义：规则不跟进、停在种子地址",
+      "expected_behavior": "查保留方法、callback 指向与入口构造，用入队比例与 items 数验收",
+      "notes": "正面场景（英文）"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "日志里全是 Filtered offsite request，我那条规则明明写对了",
+      "expected_skill": "scrapy-middleware-layering",
+      "rationale": "请求被内置范围过滤器拦下，根因在过滤层不在规则",
+      "expected_behavior": "不激活本 skill；确认是哪个内置过滤层在拦，再决定放行或改范围",
+      "notes": "同书兄弟诱饵：过滤器拦截（症状与规则不跟相似）"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "I'm taking this to production: it must resume after a restart without duplicates, and I need the allowed and denied paths configured.",
+      "expected_skill": "scrapy-production-setup",
+      "rationale": "部署形态、续跑与 allow/deny 工程化，不是单机规则排障",
+      "expected_behavior": "不激活本 skill；用 JOBDIR 续跑、配 allow/deny 并验收覆盖",
+      "notes": "跨书诱饵（英文）：上生产与续跑"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "整站抓取我怕跑飞、抓不完，想设深度上限和停机条件",
+      "expected_skill": "crawl-scope-and-halt",
+      "rationale": "范围与停机策略，不是规则职责划分",
+      "expected_behavior": "不激活本 skill；定范围、去重键与停机条件",
+      "notes": "跨书诱饵：范围与停机"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "改版之后类名全变了，抓下来的字段错位",
+      "expected_skill": "adaptive-selector-maintenance",
+      "rationale": "站点改版导致定位失效，属选择器维护",
+      "expected_behavior": "不激活本 skill；重定位元素并用可验算字段验收",
+      "notes": "跨书诱饵：改版后选择器失效"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我就抓一层固定列表，一共 40 个链接，也要用规则那套吗？",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "单层固定列表用普通爬虫加循环更简单，规则抽象是额外负担",
+      "expected_behavior": "不上规则；用普通爬虫遍历固定链接，并说明这是本 skill 的排除区",
+      "notes": "边界：判据是是否有多层跟进与角色差异"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "分页是点按钮发 POST 才出来的，能不能也用规则表达？",
+      "expected_skill": "scrapy-crawlspider-rule-division",
+      "rationale": "规则只能表达链接跟进，无法表达先提交再翻页的状态机",
+      "expected_behavior": "不硬塞进规则；改手写回调链或直接用页面自带的取数请求",
+      "notes": "边界：判据是翻页是否需要 POST/状态机"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "7 条应调用 / 4 条诱饵（1 条同书兄弟、3 条跨书，其中 1 条英文）/ 2 条边界模糊。特别检查：与 scrapy-production-setup 的分界已由 decoy-02 覆盖。"
+}

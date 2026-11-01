@@ -1,0 +1,43 @@
+{
+  "skill": "harvest-surface-expansion",
+  "version": "0.1.0",
+  "source_book": "实战经验沉淀（OSINT 采集链）",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "hse-01",
+      "type": "should_trigger",
+      "prompt": "只给了个主域 xxx.com，除了首页啥都没有，帮我把所有能找到的资产列出来，包括测试环境和历史后台。",
+      "expected_behavior": "激活 harvest-surface-expansion，先取 CT 日志 + Wayback CDX + CommonCrawl 并集，再做存活确认与指纹聚类，输出资产簇清单。",
+      "notes": "典型触发：单点扩面。"
+    },
+    {
+      "id": "hse-02",
+      "type": "should_trigger",
+      "prompt": "crt.sh 拉下来一堆子域，怎么判断哪些是同一套系统？",
+      "expected_behavior": "激活本 skill，走 favicon mmh3 + title + TLS CN + Server 四字段聚类，并说明 CDN/框架默认图标会造成误合。",
+      "notes": "聚类判据。"
+    },
+    {
+      "id": "hse-03",
+      "type": "should_not_trigger",
+      "prompt": "这个 /api/user?id=1 能不能改成 2 看到别人的数据？",
+      "expected_behavior": "不激活本 skill，转 access-control-and-idor。",
+      "notes": "诱饵：单接口越权，属对象级授权问题。"
+    },
+    {
+      "id": "hse-04",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这个站的所有文章正文抓下来存成 jsonl。",
+      "expected_behavior": "不激活本 skill（资产发现），转 crawl-depth-and-antibot 或 harvest-pipeline-and-archive。",
+      "notes": "跨 skill 混淆：同书兄弟 skill 的内容采集。"
+    },
+    {
+      "id": "hse-05",
+      "type": "ambiguous",
+      "prompt": "先摸清这个目标有什么，再决定打哪。",
+      "expected_behavior": "激活本 skill 做资产面，输出后交接 crawl-depth-and-antibot 与 06–09 专项。",
+      "notes": "边界模糊：摸底 + 后续利用。"
+    }
+  ]
+}

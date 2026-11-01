@@ -1,0 +1,52 @@
+{
+  "skill": "scrape-preflight-and-entry-ladder",
+  "version": "0.1.0",
+  "source_book": "《用 Python 写网络爬虫（第2版）》 — Katharine Jarmul / Richard Lawson",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "下周要接一个新数据源，先帮我做尽调：读 robots.txt 看哪个 UA 被拒、crawl-delay 多少、sitemap 指向哪，再估一下总量，判断这活该不该接。",
+      "expected_behavior": "应激活 scrape-preflight-and-entry-ladder，用五个只读信号收敛成判定卡：入口一句话 + 速率上限 + 风险等级 + go/no-go，并说明 Sitemap 可能缺失/过期、规模决定的是架构档位而不是线程数。",
+      "notes": "正面场景：动手前尽调 + 判该不该接，description 的核心"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "老板在立项会上直接问“这个站到底能不能抓”，我要给的是能/不能的结论，不是一套技术方案。",
+      "expected_behavior": "应激活 scrape-preflight-and-entry-ladder，做项目级否决判断：若 ToS 明确禁止或数据属受限类别且无授权渠道，输出“不可行 + 替代数据源”，而不是“那我调慢一点再试试”。",
+      "notes": "正面场景：项目级 go/no-go，正是本 skill 与合规分层的分界处"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我打算用 WHOIS 查所有者、结合 sitemap 估页数、再瞄一眼技术栈，这几个信号该怎么排顺序读才不白费功夫？",
+      "expected_behavior": "应激活 scrape-preflight-and-entry-ladder，按五项顺序（robots → Sitemap → 规模 → 技术栈 → 所有者与 ToS）说明每项读什么、产出什么参数，并强调技术栈只回答“数据是否已在初始 HTML 里”，不是做安全扫描。",
+      "notes": "正面场景：尽调信号的读取顺序与方法"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "这个站已经定了要抓，现在只想比较打印版、移动版和页面自用接口哪条路径最省事，要不要上浏览器。",
+      "expected_behavior": "不应激活 scrape-preflight-and-entry-ladder，因为已过闸门、问题变成路径排序，应激活 data-path-cost-ladder。",
+      "notes": "跨 skill 混淆诱饵：MERGE_PLAN 明确点名 preflight（go/no-go）与 data-path（选哪条路）对照"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "pandas 里 drop_duplicates 默认保留第一条还是最后一条？想确认一下。",
+      "expected_behavior": "不应激活本 skill，因为这是数据处理函数的信息查询，与站点尽调、可抓性判断无关。",
+      "notes": "诱饵：纯信息查询/其他领域，避免任何“URL 去重”字面联想误激活"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "目标站是 React 单页应用，我不知道还有没有必要做尽调，还是直接写爬虫算了。",
+      "expected_behavior": "应激活 scrape-preflight-and-entry-ladder：技术栈只是五个信号之一，SPA 的结论是“内容动态加载”，应写进判定卡的入口一句话与风险等级，再走完 robots/规模/ToS 才给 go/no-go；不能因为“看着会写爬虫”就跳过闸门。具体取数路径排序留给 data-path-cost-ladder。",
+      "notes": "边界：一个技术信号既像尽调内容，又像路径选择的前置判断"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

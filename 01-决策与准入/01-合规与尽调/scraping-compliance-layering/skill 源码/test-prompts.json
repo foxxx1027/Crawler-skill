@@ -1,0 +1,52 @@
+{
+  "skill": "scraping-compliance-layering",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我们抓了某平台公开的商品评价，想在自己官网做个“口碑墙”，把评论原文一条条展示出去，这样会有问题吗？",
+      "expected_behavior": "应激活 scraping-compliance-layering，按四条轨道分开判：版权（评论原文属创造性表达，整段公开转载越线；统计性摘要属事实）→ 授权（ToS）→ 损害 → 访问控制，输出“改做法：只展示统计/摘要或短引用，不转载原文”。",
+      "notes": "正面场景：能不能公开发布，正是版权轨道要回答的"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "今天收到某平台发来的停止函，说我们抓他们的价格数据违反服务条款，要求立刻停止。我第一步该做什么判断？",
+      "expected_behavior": "应激活 scraping-compliance-layering，判授权轨道（停止函等于撤销许可）叠加损害三条件，给出停手/改做法/咨询律师三选一的明确动作，并提示“不构成侵害动产”不等于其他轨道也安全。",
+      "notes": "正面场景：停止函是 description 明列的触发条件"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "抓到的评论数据里带着用户昵称、城市、发布时间，我想存进自己的数据库做统计分析，这样算碰个人信息吗？",
+      "expected_behavior": "应激活 scraping-compliance-layering，判定个人信息属受限类别：区分“非公开库内分析”与“对外发布/再识别”，输出“先停手确认授权与脱敏，不上敏感字段”，而不是直接给技术方案。",
+      "notes": "正面场景：数据含个人信息是硬触发信号"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "这个新站点我想先摸清规模：sitemap 里大概多少条 URL、要单机还是分布式、robots 给的 crawl-delay 是多少，先出一份尽调结论。",
+      "expected_behavior": "不应激活 scraping-compliance-layering，因为用户要的是项目级可行性/规模/速率尽调，应激活 scrape-preflight-and-entry-ladder。",
+      "notes": "跨 skill 混淆诱饵：两条 skill 都涉及 robots/ToS，但前者是项目闸门、后者是做法级合规判断（MERGE_PLAN 点名对照）"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "robots.txt 语法里 User-agent、Disallow、Allow、Crawl-delay 各自的含义和书写规则是什么？",
+      "expected_behavior": "不应激活本 skill，因为这是协议语法的纯信息查询，不涉及“抓了能不能用/能不能发”的合规判断。",
+      "notes": "诱饵：纯信息查询，且带 robots 关键词，最容易误激活"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "这个站 robots.txt 写了 Disallow: /，但页面本来就公开可访问。我们只是内部做数据分析、不对外发布，还用不用管它？",
+      "expected_behavior": "可以激活 scraping-compliance-layering，按授权轨道说明 robots 是访问约定而非法律授权、“没有 robots 不等于授权”、用途轨道区分非公开分析与公开转载，输出“改做法：降频 + 遵守禁入路径 + 不发布”；但不应把它简化成“公开可见就能随便抓”，也不该转成纯技术路径问题。",
+      "notes": "边界：robots 既像合规又像技术，需按“用途 + 授权”两条轨道判定"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

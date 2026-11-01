@@ -1,0 +1,52 @@
+{
+  "skill": "native-hook-or-unidbg",
+  "version": "0.1.0",
+  "source_book": "《爬虫逆向进阶实战》 — 李玺",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "Java 层把标准算法全 Hook 了一遍，接口里的 sign 一个都对不上，估计在 so 里，但我不想读 ARM 汇编",
+      "expected_behavior": "应激活 native-hook-or-unidbg，把「不逆 so」当默认策略：静态只做到定位 so 里的目标函数，再用 Unidbg 黑盒调用该 JNI 方法取回结果",
+      "notes": "正面场景：参数落 native、不想逆汇编"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "Unidbg 能加载 so、也能调到方法，但返回空数组，也不报错",
+      "expected_behavior": "应激活 native-hook-or-unidbg，先做二分归因：不报错但值不对属「上下文缺失」，回溯 Java 层调用链找到真正做初始化的入口，用上层方法带跑或按内存接口补全局状态",
+      "notes": "正面场景：返回空值，二分归因"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "每天要算二十万个参数，需要离线批量；手上只有一台测试机，选 Unidbg 还是 Frida RPC",
+      "expected_behavior": "应激活 native-hook-or-unidbg，用四个量选路（调用量、是否离线批量、环境可控性、对方是否有反注入）：量大且离线、设备不够选 Unidbg；少量且要真实环境选 RPC",
+      "notes": "正面场景：两条交付路线选一"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "Unidbg 的 emulator 支持 arm64 吗，能不能直接跑 64 位 so",
+      "expected_behavior": "不应激活本 skill，这是纯文档／能力查询，没有选路或排障任务",
+      "notes": "诱饵：纯信息查询"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "站点 JS 搬到 Node 跑，报 window is not defined，补了还报 navigator 没有",
+      "expected_behavior": "不应激活本 skill，应激活 js-env-patch-loop，这是 JS 侧补环境不是 so 侧",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：同为「补环境」，两侧环境不同"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "so 里的导出函数 Unidbg 已经调通，值和抓包逐字符一致；现在想读懂算法，回头写成纯 Python",
+      "expected_behavior": "不应激活 native-hook-or-unidbg：默认策略是不逆 so，值已一致即交付达标；「要不要读汇编／复写」属成本决策，应转 reverse-cost-ladder 评估",
+      "notes": "边界：已打通后需求变成成本决策，不是排障"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

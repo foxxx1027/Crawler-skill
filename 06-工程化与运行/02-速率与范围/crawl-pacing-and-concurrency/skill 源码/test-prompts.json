@@ -1,0 +1,52 @@
+{
+  "skill": "crawl-pacing-and-concurrency",
+  "version": "0.1.0",
+  "source_book": "《Python网络爬虫权威指南（第2版）》 — 瑞安·米切尔；《用 Python 写网络爬虫（第2版）》 — 凯瑟琳·雅姆尔、理查德·劳森",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "要抓 200 万页，领导要求两周内完成。算下来单机不够，是不是直接加到 20 台机器并行就行了？",
+      "expected_behavior": "应激活 crawl-pacing-and-concurrency，先核减请求、再按 robots/ToS 换算对方配额，指出机器数不是自变量——若对方按 IP/账号限流，加机器只会让封禁提前；最后给出用结构摊平峰值与按域名记账的方案，再谈并发模型。",
+      "notes": "正面场景：deadline 压着赶工 + 要不要加机器，是 description 明写的触发"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我把线程数从 8 调到 32，吞吐一点没涨，CPU 反而打满、错误率也上去了，偶尔开始出现 429。",
+      "expected_behavior": "应激活 crawl-pacing-and-concurrency，指出并发增长非线性：先测本机拐点，再把请求按域名记账、按间隔补睡眠，最后决定并发交给框架还是自己控制，而不是继续加线程。",
+      "notes": "正面场景：线程数与吞吐的关系问题，属速率预算范畴"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我对一个域名在 1 秒内发了 50 个请求，太猛了。除了在每次请求后 sleep，还有什么办法把峰值摊平？",
+      "expected_behavior": "应激活 crawl-pacing-and-concurrency，给出“循环嵌套顺序即限速器”的做法（外层主题、内层站点），再叠加按域名的 Throttle 记账，让总请求数不变而峰值压力下降。",
+      "notes": "正面场景：QPS 峰值过高，正是速率预算要摊平的对象"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "这条爬虫跑到第三天因为机器重启中断了，重跑一次又要好几周。我想让第二次直接从断点继续，别把已经抓过的页面重下。",
+      "expected_behavior": "不应激活 crawl-pacing-and-concurrency，因为诉求是“中断后续跑、别重下”，应激活 cache-as-cost-tradeoff 做存储换重跑的成本置换。",
+      "notes": "跨 skill 混淆诱饵：MERGE_PLAN/LINKS 点名 cache 与 pacing 对照，两者都谈“重跑太慢”"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Python 里 threading 和 multiprocessing 有什么区别？GIL 是怎么影响它们的？",
+      "expected_behavior": "不应激活本 skill，因为这是语言机制的纯概念查询，没有具体抓取任务与速率约束需要设计。",
+      "notes": "诱饵：纯信息查询，且含线程/进程关键词"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "这次只抓 3 个页面，但对方 robots.txt 写了 Crawl-delay: 5。要不要为这个小项目专门搭一套限速记账？",
+      "expected_behavior": "不应激活完整的 crawl-pacing-and-concurrency 方法论（description 已排除单页小任务），只需遵守 robots 的 5 秒间隔即可；只有当规模扩到全站、需要换算配额与拐点时，才回来激活它。",
+      "notes": "边界：有速率约束但任务规模极小，分歧点是“要不要上体系”"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过 (诱饵容错为 0), 且其中至少 1 条是同书兄弟 skill 的场景 (跨 skill 混淆测试)。"
+}

@@ -1,0 +1,52 @@
+{
+  "skill": "js-env-patch-loop",
+  "version": "0.1.0",
+  "source_book": "《爬虫逆向进阶实战》 — 李玺",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "把站点的 sign JS 复制到 Node 里跑，第一行就 window is not defined，补完 window 又报 document 找不到",
+      "expected_behavior": "应激活 js-env-patch-loop，按报错驱动逐个补（缺什么补什么），以「报错换名」作为推进判据，而不是一次写满一张环境清单",
+      "notes": "正面场景：报错驱动补环境"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "代码能跑、值也能算出来，但服务端回「环境异常」；我补了 navigator.plugins 还是被认出来",
+      "expected_behavior": "应激活 js-env-patch-loop，指出补属性不等于补类型：用 Symbol.toStringTag 把 plugins 标成 PluginArray、plugins[0] 标成 Plugin，并过一遍检测点清单（webdriver、canvas/WebGL、native 方法是否被重写）",
+      "notes": "正面场景：产物被识别，属「跑得像」那一半"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "手补了三十多个属性还是过不了检测，是不是该换 JSDOM 或者直接上真浏览器",
+      "expected_behavior": "应激活 js-env-patch-loop，按成本升级路径给判断（手补→Proxy 自动探测→JSDOM→真浏览器驱动），并说明 JSDOM 在部分场景同样会被检测出来",
+      "notes": "正面场景：手补不动时的升级决策"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "Node 里 globalThis 和 window 是什么关系，为什么有的代码要写 window = global",
+      "expected_behavior": "不应激活本 skill，这是纯语言机制问答，没有「把原站 JS 跑出与浏览器一致结果」的任务",
+      "notes": "诱饵：纯知识"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "Unidbg 里 so 一加载就报 getStaticObjectField 找不到 Application 类型，这个环境该怎么补",
+      "expected_behavior": "不应激活本 skill，应激活 native-hook-or-unidbg，补的是 native/Unidbg 侧环境而不是 JS 环境",
+      "notes": "跨 skill 混淆诱饵（硬性要求）：同为「补环境」，一侧是 JS、一侧是 so"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "本地算出来的值和抓包值逐字符一致了，但请求发出去还是 403，要不要继续补环境",
+      "expected_behavior": "不应激活 js-env-patch-loop：产物已与服务端一致，说明「不像」不是瓶颈；403 应回到字段集合与接口绑定去排查（sign-reproduce-acceptance）",
+      "notes": "边界：一致即达标，不能把 403 都归因给环境"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "至少 3 条 should_trigger + 2 条 should_not_trigger + 1 条 edge_case。全部 should_not_trigger 必须通过（诱饵容错为 0），且其中至少 1 条是同书兄弟 skill 的场景（跨 skill 混淆测试）。"
+}

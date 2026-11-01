@@ -1,0 +1,109 @@
+{
+  "skill": "ast-restore-locate-and-protocol",
+  "version": "0.1.0",
+  "source_book": "《反爬虫AST原理与还原混淆实战》 — 李岳阳、卓斌",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "自有测试站上，登录请求体里有个 64 位的长串；我把它整段拿去所有抓到的响应里比对，哪一条都没有。我不想一上来就啃混淆代码，先想确认它到底是谁算出来的。（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-locate-and-protocol",
+      "expected_behavior": "激活本 skill，先在全部抓包中判值来源（响应体/请求体/本地生成），零命中才判为本地生成并进入定位",
+      "rationale": "全量抓包零命中，需要先判值是服务器下发还是本地生成，正是值来源门的正面场景",
+      "notes": "A2 情境 1：搜参数名/搜值零命中"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "我想找某个字段是哪段代码加的，按名字往源码里一搜出来九百多条，点开全是压缩过的库和同名注释，根本不知道该点哪个；这种情况值本身还值不值得我去逆，该从哪儿判断？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-locate-and-protocol",
+      "expected_behavior": "激活本 skill，判定单级命中超阈值后换级（改看 Initiator 调用栈），不再在同一级扩关键词",
+      "rationale": "命中数量远超阈值、候选全是库代码，属于该换定位手段的正面场景",
+      "notes": "A2 情境 2：命中过多换级"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "只有点完那个按钮、请求里才会多出一个字段，我不确定它是页面回调里现算的，还是从别的地方拿到的；想先把来源定下来再决定要不要读代码。（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-locate-and-protocol",
+      "expected_behavior": "激活本 skill，判为交互级值，改用事件断点/业务回调栈定位，而不是在发送层死磕",
+      "rationale": "值只在业务动作后出现，定位要从发送层转向回调层，属本 skill 的手段阶梯",
+      "notes": "A2 情境 3：点击后才出现"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "同一个字段，我按 F5 重新加载它就会换一个，但换一张验证码它又不动；我想要复现，到底是抓一次存下来就行，还是必须每次现算？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-locate-and-protocol",
+      "expected_behavior": "激活本 skill，做刷新/换验证码两组对照，判定会话级还是交互级，并给出'抓一次写死是否可用'的结论",
+      "rationale": "用两种动作对照判值生命周期，是本 skill 独有的前置判定",
+      "notes": "A2 情境 4：生命周期对照"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "我手上只有一个加密后的串和它对应的接口地址，连这个参数叫什么名字都不知道；我现在最想弄清这值是谁产生的、值不值得为它去逆，而不是用哪个断点。（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-locate-and-protocol",
+      "expected_behavior": "激活本 skill，从接口定位入手，先判来源再按信息量选最低成本的定位手段",
+      "rationale": "只有密文和接口、无参数名，仍在'该不该逆、从哪开始'的范围内",
+      "notes": "A2 情境 5：只有值没有名字"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "On our own staging site this token shows up in the POST body, but it is in none of the captured responses. Before reading the bundle, I need to know who produces it.（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-locate-and-protocol",
+      "expected_behavior": "激活本 skill，先判值来源，再决定复现上游请求还是逆本地 JS",
+      "rationale": "英文表述的同一场景：抓包搜不到响应，需要判来源",
+      "notes": "英文场景，对应 A2 情境 1"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "这个文件看着是被处理过的，我想知道它到底是普通编码、还是真加密、还是叠了好几层混淆，要不要按算法去啃？（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "不应激活本 skill；应激活 obfuscation-fingerprint-triage（判层与加密/编码定性）",
+      "rationale": "问的是代码被做了哪些处理，不是某个值的来源与生成位置",
+      "notes": "同书兄弟诱饵：判层 vs 判值来源"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "sign 我已经在本地算出来了，但跟抓包里那个就是差一个字符，我不知道是哪几个字段参与进去的。（自有系统/已授权环境）",
+      "expected_skill": "sign-reproduce-acceptance",
+      "expected_behavior": "不应激活本 skill；应激活 sign-reproduce-acceptance（函数已找到，验复现值）",
+      "rationale": "函数已找到、只需要判断复现对不对，本 skill 明确只到'找到生成链'为止",
+      "notes": "跨书诱饵：定位 vs 复现验收"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "抓包工具里一条请求都没有，代理和证书我都装好了，浏览器开着就是不进列表。（自有系统/已授权环境）",
+      "expected_skill": "capture-failure-triage",
+      "expected_behavior": "不应激活本 skill；应激活 capture-failure-triage（通道层没通）",
+      "rationale": "包都没抓到，本 skill 的边界明确要求先解决通道",
+      "notes": "跨书诱饵：通道故障"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "这个字段刷新就变，我怀疑是本地生成的，同事说可能是服务端下发的；我想先把来源和'要不要每次现算'定下来，再决定要不要去找具体函数。（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-locate-and-protocol",
+      "expected_behavior": "激活本 skill：关键判据是'来源未定 + 生命周期未定'，需先做抓包搜值 + 刷新/业务动作两组对照；单纯的定位手段选择不足以覆盖",
+      "rationale": "边界在'值来源判定'与'定位手段阶梯'之间；出现来源未定即归本 skill",
+      "notes": "边界：与 js-param-locate-ladder 重叠，判据是是否先判来源"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "I already confirmed the token is generated client-side. Now I only need to pick the cheapest way to find the exact function. Is that still your job?（自有系统/已授权环境）",
+      "expected_skill": "js-param-locate-ladder",
+      "expected_behavior": "可倾向 js-param-locate-ladder：关键判据是'来源已确认'，值来源门已过，只剩按信息量选手段；本 skill 的独有价值（来源判定+生命周期）不再需要",
+      "rationale": "边界：来源已判完时两 skill 高度重叠，按'是否还需判来源'划分",
+      "notes": "英文边界用例：与跨书 js-param-locate-ladder 的分界"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条 should_trigger（覆盖 A2 五类情境 + 1 英文）、3 条 should_not_trigger（1 同书 + 2 跨书）、2 条 edge_case（1 中文 1 英文）。 全部用例限定自有系统/已授权环境。"
+}

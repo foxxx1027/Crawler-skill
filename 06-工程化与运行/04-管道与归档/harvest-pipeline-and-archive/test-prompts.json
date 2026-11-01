@@ -1,0 +1,43 @@
+{
+  "skill": "harvest-pipeline-and-archive",
+  "version": "0.1.0",
+  "source_book": "实战经验沉淀（采集管道）",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "hpa-01",
+      "type": "should_trigger",
+      "prompt": "抓了三十万页，同一个文章存了十几份，怎么去重？",
+      "expected_behavior": "激活本 skill，给 simhash 内容级去重 + 海明阈值 + canonical/variants 结构。",
+      "notes": "典型触发：去重。"
+    },
+    {
+      "id": "hpa-02",
+      "type": "should_trigger",
+      "prompt": "爬到一半断了，重跑又从头发请求，怎么接着跑？",
+      "expected_behavior": "激活本 skill，给 urls.state 三态 + --resume 只取 pending 的队列设计。",
+      "notes": "断点续爬。"
+    },
+    {
+      "id": "hpa-03",
+      "type": "should_trigger",
+      "prompt": "想监控几个页面什么时候被改了、删了什么。",
+      "expected_behavior": "激活本 skill，给 revisions 表 + content_hash + 条件请求（ETag/Last-Modified）增量。",
+      "notes": "变化检测。"
+    },
+    {
+      "id": "hpa-04",
+      "type": "should_not_trigger",
+      "prompt": "备份盘挂了，怎么把数据恢复出来？",
+      "expected_behavior": "不激活本 skill，转 data-backup-recovery-discipline。",
+      "notes": "跨 skill 混淆：备份还原不是采集管道。"
+    },
+    {
+      "id": "hpa-05",
+      "type": "ambiguous",
+      "prompt": "抓下来的东西怎么喂给扫描器？",
+      "expected_behavior": "激活本 skill，导出 endpoints.txt / documents.jsonl 并说明字段。",
+      "notes": "边界模糊：导出消费。"
+    }
+  ]
+}

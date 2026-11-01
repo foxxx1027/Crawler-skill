@@ -1,0 +1,127 @@
+{
+  "skill": "scrapy-cookie-pool-selfheal",
+  "version": "0.1.0",
+  "source_book": "《Scrapy网络爬虫实战》 — 东郭大猫",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "跑了一夜，早上看库里一条都没有，日志里全是 200，也看不出哪儿出错",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "长跑任务无报错但结果为空，是登录态集体失效的典型签名",
+      "expected_behavior": "查响应侧是否被踢回登录页、统计 301/302 与池大小，扩成多信号检测并换新凭证重排",
+      "notes": "正面场景：静默跑空"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "手上五个测试账号，想让它们轮流干活，手工把每份凭证粘进代码已经不现实",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "多账号需要可轮换、可回收的资源池",
+      "expected_behavior": "收集→按稳定主键存库→请求前整包注入→响应侧检测→替换，并让 UA 与凭证同身份",
+      "notes": "正面场景：多账号维护（自有测试账号，已授权）"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "跑着跑着就被弹回登录页，可没人半夜守着重启脚本",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "需要无人值守的失效检测与替换，而不是人工重启",
+      "expected_behavior": "把检测放响应侧，命中后按主键删旧取新、改请求凭证并重排",
+      "notes": "正面场景：登录态反复失效"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "A 账号的凭证配了 B 浏览器的标识，总被要求重新验证",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "身份包不一致会被会话一致性校验判异常",
+      "expected_behavior": "一次选一个身份包（凭证 + UA + 可选出口），不要各自独立随机",
+      "notes": "正面场景：身份不配对"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "这份凭证能撑多久我心里没数，要不要做一套自动补的机制？",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "评估是否值得池化，属资源池的适用范围判断",
+      "expected_behavior": "先记 TTL 与账号数；任务短于 TTL 用静态凭证，长于 TTL 或多账号则建池并接自愈",
+      "notes": "正面场景：池化可行性评估（与 login-route-choice 有交叉）"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "失效时我想按账号精确换掉那一条，而不是随手删一条，怎么保证不误伤还在用的？",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "删除必须按稳定主键，随机删会让池越用越少",
+      "expected_behavior": "每条记录带账号主键与 TTL，按主键删除与替换，并以池大小稳定性验收",
+      "notes": "正面场景：池维护"
+    },
+    {
+      "id": "should-trigger-07",
+      "type": "should_trigger",
+      "prompt": "Five test accounts, a job that runs all night: credentials keep going stale and the crawl keeps going with zero rows.",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "英文版同义：长跑 + 多账号 + 静默空结果",
+      "expected_behavior": "按主键池化、响应侧检测、换新重排，并核对 UA 与凭证同包",
+      "notes": "正面场景（英文，自有测试账号）"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "第一次上这个站要登录，是该老老实实发账号密码，还是把浏览器里现成的那份抄过来？",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "首次登录的路线选择，尚未进入长期池化阶段",
+      "expected_behavior": "不激活本 skill；先做真实接口/字段名/成功判据三步定位，再按成本选路",
+      "notes": "同书兄弟诱饵：首次登录选路"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "我照登录请求发了 POST，返回 200，可后面看个人主页还是匿名状态",
+      "expected_skill": "scrapy-login-route-choice",
+      "rationale": "单次登录失败判定，不是多账号运行期维护",
+      "expected_behavior": "不激活本 skill；核对提交路径（是否被脚本接管）、隐藏字段与成功判据",
+      "notes": "同书兄弟诱饵：登录提交未生效"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "A form field that changes on every load was hard-coded, so it broke the next day; and after submitting I never confirmed it actually wrote.",
+      "expected_skill": "form-hidden-state-and-readback",
+      "rationale": "一次性隐藏字段的读取、回填与写后回读，是表单状态问题",
+      "expected_behavior": "不激活本 skill；每次从当次响应遍历读取字段，写后回读断言",
+      "notes": "跨书诱饵（英文）：隐藏字段与回读"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "验证码每次都弹，我在纠结接打码平台还是人工过一次",
+      "expected_skill": "captcha-cost-routing",
+      "rationale": "人机验证成本分路，已超出登录态维护范围",
+      "expected_behavior": "不激活本 skill；按通过率与成本在各方案间分路",
+      "notes": "跨书诱饵：验证码成本"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "任务就两百来条、十几分钟跑完，凭证三小时才过期，还值得搞池子吗？",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "单次且短于 TTL，池化成本高于重新登录一次",
+      "expected_behavior": "不建池；直接用静态凭证，并说明这是本 skill 的排除区",
+      "notes": "边界：判据是任务时长与 TTL、账号数"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "站点改版后不再跳登录页，改成返回 200 加一段前端脚本，我那套判据还算数吗？",
+      "expected_skill": "scrapy-cookie-pool-selfheal",
+      "rationale": "单一 302 判据失效，但失效检测的职责仍在该 skill",
+      "expected_behavior": "扩为多信号（状态码 + 目标页关键字段缺失 + 前端标记），再上线；不要硬编码单一跳转",
+      "notes": "边界：判据是失效识别是否仍必要（是），但检测信号要换代"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "7 条应调用 / 4 条诱饵（2 条同书兄弟、2 条跨书，其中 1 条英文）/ 2 条边界模糊。"
+}

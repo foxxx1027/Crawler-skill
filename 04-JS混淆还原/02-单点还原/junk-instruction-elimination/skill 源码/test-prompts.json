@@ -1,0 +1,118 @@
+{
+  "skill": "junk-instruction-elimination",
+  "version": "0.1.0",
+  "source_book": "《反爬虫AST原理与还原混淆实战》 — 李岳阳、卓斌",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "代码里老出现从一个对象上按名字取属性的写法，取出来的东西还要再取一次，像套娃一样。（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "激活本 skill，建 totalObj 二级索引，按字符串链递归到 StringLiteral 为止",
+      "rationale": "对象属性链逐层取值，正是字符串花指令的形态",
+      "notes": "A2 情境 1：属性链套娃"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "文件里有特别多名字都不一样、但函数体只有一行加法的函数，每个用到的地方都换成了调用它们，能不能把调用换回原来的加减乘除？（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "激活本 skill，按'函数体一行 + 一次运算'识别函数花指令（不按名字去重），递归到体内无 MemberExpression 为止",
+      "rationale": "异名同构的一行包装函数，是函数花指令",
+      "notes": "A2 情境 2：包装函数"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我把那个对象定义里的属性值都改成真实值了，可是引用它的地方拿到的还是旧的，感觉白改了。（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "激活本 skill，指出只改定义侧等于白改，必须重算 totalObj 后遍历全文件引用侧再替换",
+      "rationale": "定义侧/引用侧两遍替换的典型失败",
+      "notes": "A2 情境 3：只改定义侧"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "那个专门套娃用的对象里，除了这些乱七八糟的东西，还存着真正的配置，我一整个删掉程序就报错了。（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "激活本 skill，按引用计数判定，引用不为 0 或承载真实配置则保留对象",
+      "rationale": "删对象前查引用，是本 skill 的删除约束",
+      "notes": "A2 情境 4：对象承载真实配置"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "这些属性你指我、我指你，脚本跑进去就出不来了。（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "激活本 skill，加 visited 与深度上限，命中自引用环判为真实依赖并保留",
+      "rationale": "递归不终止的自引用环，是本 skill 的可终止性检查",
+      "notes": "A2 情境 5：自引用环"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "There are dozens of differently named one-line helpers that each just add or multiply once, plus chains like obj['a']['b']. How do I unwrap those calls back to the original arithmetic?（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "激活本 skill，分字符串花指令与函数花指令两类递归，两遍替换",
+      "rationale": "英文表述的双类花指令折叠场景",
+      "notes": "英文场景，对应 A2 情境 1+2"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "我想把前面那一大坨字符串数组里的调用全部换成明文。（自有系统/已授权环境）",
+      "expected_skill": "string-pool-decrypt-revive",
+      "expected_behavior": "不应激活本 skill；应激活 string-pool-decrypt-revive（整池复活）",
+      "rationale": "容器是大数组+解密函数，不是对象属性链",
+      "notes": "同书兄弟诱饵：池 vs 对象间接"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "代码里有 425871^425977 和 \\x61 这种东西，我想直接算成数字和字符。（自有系统/已授权环境）",
+      "expected_skill": "constant-fold-and-decoding",
+      "expected_behavior": "不应激活本 skill；应激活 constant-fold-and-decoding（纯字面量与编码）",
+      "rationale": "没有间接层，只是可静态求值的表达式",
+      "notes": "同书兄弟诱饵：间接层 vs 常量"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "变量名全是下划线那一套，我想改成人能读的，结果一改就报某个名字没定义。（自有系统/已授权环境）",
+      "expected_skill": "scope-safe-rename",
+      "expected_behavior": "不应激活本 skill；应激活 scope-safe-rename（binding 归属与遮蔽）",
+      "rationale": "用户诉求是改名与其失败形态，不是去间接层",
+      "notes": "同书兄弟诱饵：改名 vs 折叠"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "我把代码搬到 Node 跑，window 和 document 都没有，补了几个还是被认出来。（自有系统/已授权环境）",
+      "expected_skill": "js-env-patch-loop",
+      "expected_behavior": "不应激活本 skill；应激活 js-env-patch-loop（补环境与伪装）",
+      "rationale": "运行期环境缺失，与静态折叠无关",
+      "notes": "跨书诱饵：补环境"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "有些取值链最后指向的是个函数，函数里面又用了别的属性；有些最后直接就是字符串，这两类要不要分开处理？（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "激活本 skill：关键判据是'终止条件不同'（字符串链止于 StringLiteral、函数链止于体内无 MemberExpression），正是本 skill 的两级递归",
+      "rationale": "边界：对象间接与字符串池相似，判据是容器与终止条件",
+      "notes": "边界：与 string-pool-decrypt-revive 的重叠"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "I want to unwrap these obj['a']['b'] chains, but I'm not sure whether to fix the object definitions first or the places that read from them.（自有系统/已授权环境）",
+      "expected_skill": "junk-instruction-elimination",
+      "expected_behavior": "激活本 skill：关键判据是'定义侧 vs 引用侧'，本 skill 给出两遍替换与重算 totalObj 的顺序；若问的是全局七段谁先谁后才转 ast-restore-pipeline-acceptance",
+      "rationale": "边界：段内顺序与全局流水线顺序，判据是是否局限在一个对象",
+      "notes": "英文边界用例"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条 should_trigger（覆盖 A2 五类情境 + 1 英文）、4 条 should_not_trigger（3 同书 + 1 跨书）、2 条 edge_case（1 中文 1 英文）。 全部用例限定自有系统/已授权环境。"
+}

@@ -1,0 +1,118 @@
+{
+  "skill": "ast-restore-pipeline-acceptance",
+  "version": "0.1.0",
+  "source_book": "《反爬虫AST原理与还原混淆实战》 — 李岳阳、卓斌",
+  "darwin_compatible": true,
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "我照着教程把整份文件的还原脚本跑完了，一行报错都没有，可生成出来的值和抓包里那个就是对不上，该从哪儿查？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "激活本 skill，按 L1/L2 分档归因（先验算法本体与已知样本，再验环境与拼接），不从改算法开始",
+      "rationale": "无报错但产物错，典型静默失败，需要分段归因",
+      "notes": "A2 情境 1：静默失败"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "这份文件里字符串是乱的、还套着花指令和平坦化；我该按什么顺序做完整套还原，先解字符串还是先改名？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "激活本 skill，给出段序并强调两条硬依赖（字符串先于改名、花指令先于平坦化）",
+      "rationale": "问的是段间顺序，本 skill 的核心产出",
+      "notes": "A2 情境 2：顺序纠结"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "我把还原后的文件用本地替换塞回站点，一请求就 403，是不是我哪里还原错了？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "激活本 skill，按 L1→L2→L3 归因：L2 过而 L3 不过多为站点完整性校验（SRI/CSP/哈希），不是算法错",
+      "rationale": "回站验证失败需要分档归因，属 L3 场景",
+      "notes": "A2 情境 3：回站 403"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "还原出来的代码里还留着一堆 window 包着的写法和一些下划线名字，我怀疑中间漏了一步，怎么确认？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "激活本 skill，按段清单核对残留对应哪一段未做，补段而不是重跑全流程",
+      "rationale": "残留物指示漏段，属于流水线完整性检查",
+      "notes": "A2 情境 4：残留怀疑漏步骤"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "我想给组里定一套每次都能照着走的还原流程，还要能证明产物是对的，验收该分几层、每层看什么？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "激活本 skill，输出七段流程与 L1/L2/L3 三档验收标准",
+      "rationale": "要可重复流程与验收标准，本 skill 的直接诉求",
+      "notes": "A2 情境 5：流程与验收标准"
+    },
+    {
+      "id": "should-trigger-06",
+      "type": "should_trigger",
+      "prompt": "Our full deobfuscation pipeline runs clean, no errors at all, yet the token the whole script produces does not match the one I captured. Which stage should I suspect first?（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "激活本 skill，按三档验收定位到具体段，并解释静默失败为何不报错",
+      "rationale": "英文静默失败场景，需要分档归因",
+      "notes": "英文场景，对应 A2 情境 1"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "这文件到底用了几种混淆手段、值不值得还原，先帮我看看，别急着动手。（自有系统/已授权环境）",
+      "expected_skill": "obfuscation-fingerprint-triage",
+      "expected_behavior": "不应激活本 skill；应激活 obfuscation-fingerprint-triage（判层与取舍）",
+      "rationale": "还没决定还原，本 skill 从'决定要还原'之后开始",
+      "notes": "同书兄弟诱饵：判层在流水线之前"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "字符串我已经解开了，但代码块顺序还是乱的，读起来一直跳来跳去。（自有系统/已授权环境）",
+      "expected_skill": "control-flow-flattening-restore",
+      "expected_behavior": "不应激活本 skill；应激活 control-flow-flattening-restore（单段执行）",
+      "rationale": "定位已明确到平坦化一段，不需要全局段序与验收",
+      "notes": "同书兄弟诱饵：单段执行 vs 全局流水线"
+    },
+    {
+      "id": "should-not-trigger-03",
+      "type": "should_not_trigger",
+      "prompt": "我在 Node 里跑一直报 window is not defined，补了 navigator 之后还是被网站认出来，说我不是浏览器。（自有系统/已授权环境）",
+      "expected_skill": "js-env-patch-loop",
+      "expected_behavior": "不应激活本 skill；应激活 js-env-patch-loop（补环境与伪装）",
+      "rationale": "本 skill 的 L2 只判断'缺哪个桩'，不负责伪装环境；用户诉求已被识别",
+      "notes": "跨书诱饵：补环境 vs 验收归因"
+    },
+    {
+      "id": "should-not-trigger-04",
+      "type": "should_not_trigger",
+      "prompt": "sign 我已经复现出来了，跟抓包差一个字符，我想知道到底哪些字段参与了签名。（自有系统/已授权环境）",
+      "expected_skill": "sign-reproduce-acceptance",
+      "expected_behavior": "不应激活本 skill；应激活 sign-reproduce-acceptance（字段集合反证）",
+      "rationale": "单参数复现值验收属于 L1 级，由另一个 skill 承担",
+      "notes": "跨书诱饵：单参数验收 vs 整链验收"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "还原跑完没报错但值不对，我怀疑是步骤顺序搞错了，也怀疑是缺了某个浏览器对象，这两种怎么分开？（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "激活本 skill：关键判据是'整链产物不对 + 要分开归因'；先 L1 单函数验算法，L1 过再查 L2 环境桩，正是三档归因规则",
+      "rationale": "边界：与 js-env-patch-loop 重叠，出现'分开归因'即归本 skill",
+      "notes": "边界：验收归因 vs 补环境"
+    },
+    {
+      "id": "edge-02",
+      "type": "edge_case",
+      "prompt": "I replaced the deobfuscated file back into the live site and got a 403. Should I rewrite the algorithm, or is the site refusing my file on purpose?（自有系统/已授权环境）",
+      "expected_skill": "ast-restore-pipeline-acceptance",
+      "expected_behavior": "激活本 skill：关键判据是'替换回站后 403'，属 L3 档，先判完整性校验（SRI/CSP/哈希）；若原站正常访问也 403 才转 anti-bot-triage-and-human-parity",
+      "rationale": "边界：回站 403 既像反爬又像验收不可用，判据是'替换产物'这一动作",
+      "notes": "英文边界用例：与 anti-bot-triage-and-human-parity 的分界"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "6 条 should_trigger（覆盖 A2 五类情境 + 1 英文）、4 条 should_not_trigger（2 同书 + 2 跨书）、2 条 edge_case（1 中文 1 英文）。 全部用例限定自有系统/已授权环境。"
+}
